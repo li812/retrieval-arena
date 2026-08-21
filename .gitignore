@@ -1,0 +1,45 @@
+# Environment
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+.venv/
+venv/
+env/
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Build / dist
+dist/
+build/
+*.so
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Docker volumes (if accidentally created locally)
+neo4j_data/
+chroma_data/
+
+# Vendored frontend assets — fetched by scripts/fetch_vendor_assets.sh
+app/static/vendor/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/

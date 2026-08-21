@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retrieval Arena</title>
+  <link rel="stylesheet" href="/static/vendor/fonts/jetbrains-mono.css" />
+  <link rel="stylesheet" href="/static/vendor/fonts/inter.css" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="mode-chroma" x-data="arenaApp()" x-init="init()">
+
+  <!-- ===================== HEADER ===================== -->
+  <header id="app-header">
+    <span class="header-title">Retrieval Arena</span>
+
+    <button
+      class="btn btn-backend"
+      :class="{ active: backend === 'chroma' }"
+      @click="setBackend('chroma')"
+      title="Chroma vector store backend"
+    >&#x26A1; CHROMA</button>
+
+    <button
+      class="btn btn-backend"
+      :class="{ active: backend === 'graph' }"
+      @click="setBackend('graph')"
+      title="Knowledge graph backend"
+    >&#x25C6; GRAPH</button>
+
+    <div class="header-spacer"></div>
+
+    <button
+      id="sidebar-toggle"
+      class="btn btn-icon"
+      @click="sidebarOpen = !sidebarOpen"
+      :aria-expanded="sidebarOpen"
+      aria-label="Toggle sidebar"
+    >&#9776;</button>
+
+    <button
+      class="btn btn-icon"
+      @click="settingsOpen = !settingsOpen"
+      :class="{ 'btn-primary': settingsOpen }"
+      aria-label="Open settings"
+      title="Settings"
+    >&#9881;</button>
+  </header>
+
+  <!-- ===================== MAIN ===================== -->
+  <main id="app-main">
+
+    <!-- ---- SIDEBAR ---- -->
+    <aside id="sidebar" :class="{ open: sidebarOpen }">
+
+      <!-- === Chunking === -->
+      <div class="sidebar-section">
+        <div
+          class="sidebar-section-header"
+          :class="{ open: sections.chunking }"
+          @click="sections.chunking = !sections.chunking"
+          role="button"
+          :aria-expanded="sections.chunking"
+        >
+          <span>Chunking</span>
+          <span class="chevron">&#9654;</span>
+        </div>
+        <div class="sidebar-section-body" x-show="sections.chunking">
+          <div class="form-row">
+            <label>
+              Chunk size
+              <span class="value-display" x-text="chunk_size"></span>
+            </label>
+            <input
+              type="range" min="100" max="4000" step="50"
+              x-model.number="chunk_size"
+              aria-label="Chunk size"
+            />
+          </div>
+          <div class="form-row">
+            <label>
+              Overlap
+              <span class="value-display" x-text="chunk_overlap"></span>
+            </label>
+            <input
+              type="range" min="0" max="500" step="10"
+              x-model.number="chunk_overlap"
+              aria-label="Chunk overlap"
+            />
+          </div>
+          <div class="form-row">
+            <label>Strategy</label>
+            <div class="radio-group">
+              <label>
+                <input type="radio" x-model="chunking_strategy" value="fixed" />
+                <span>Fixed</span>
+              </label>
+              <label>
+                <input type="radio" x-model="chunking_strategy" value="sentence_aware" />
+                <span>Sentence-aware</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- === Retrieval — Chroma === -->
+      <div class="sidebar-section" x-show="backend === 'chroma'">
+        <div
+          class="sidebar-section-header"
+          :class="{ open: sections.retrievalChroma }"
+          @click="sections.retrievalChroma = !sections.retrievalChroma"
+          role="button"
+          :aria-expanded="sections.retrievalChroma"
+        >
+          <span>Retrieval &mdash; Chroma</span>
+          <span class="chevron">&#9654;</span>
+        </div>
+        <div class="sidebar-section-body" x-show="sections.retrievalChroma">
+          <div class="form-row">
+            <label>
+              Top-K
+              <span class="value-display" x-text="top_k"></span>
+            </label>
+            <input
+              type="range" min="1" max="20" step="1"
+              x-model.number="top_k"
+              aria-label="Top K results"
+            />
+          </div>
+          <div class="form-row">
+            <label>
+              Similarity threshold
+              <span class="value-display" x-text="similarity_threshold.toFixed(2)"></span>
+            </label>
+            <input
+              type="range" min="0" max="1" step="0.01"
+              x-model.number="similarity_threshold"
+              aria-label="Similarity threshold"
+            />
+          </div>
+          <div class="form-row">
+            <label>
+              MMR diversity
+              <span class="value-display" x-text="mmr_diversity.toFixed(2)"></span>
+            </label>
+            <input
+              type="range" min="0" max="1" step="0.01"
+              x-model.number="mmr_diversity"
+              aria-label="MMR diversity"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- === Retrieval — Graph === -->
+      <div class="sidebar-section" x-show="backend === 'graph'">
+        <div
+          class="sidebar-section-header"
+          :class="{ open: sections.retrievalGraph }"
+          @click="sections.retrievalGraph = !sections.retrievalGraph"
+          role="button"
+          :aria-expanded="sections.retrievalGraph"
+        >
+          <span>Retrieval &mdash; Graph</span>
+          <span class="chevron">&#9654;</span>
+        </div>
+        <div class="sidebar-section-body" x-show="sections.retrievalGraph">
+          <div class="form-row">
+            <label>Hops</label>
+            <div class="radio-group">
+              <template x-for="h in [1, 2, 3]" :key="h">
+                <label>
+                  <input type="radio" x-model.number="graph_hops" :value="h" />
+                  <span x-text="h"></span>
+                </label>
+              </template>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>
+              Max triples / chunk
+              <span class="value-display" x-text="max_triples_per_chunk"></span>
+            </label>
+            <input
+              type="range" min="1" max="20" step="1"
+              x-model.number="max_triples_per_chunk"
+              aria-label="Max triples per chunk"
+            />
+          </div>
+          <div class="form-row">
+            <label>
+              Triple limit
+              <span class="value-display" x-text="triple_limit"></span>
+            </label>
+            <input
+              type="range" min="5" max="100" step="5"
+              x-model.number="triple_limit"
+              aria-label="Triple limit"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- === Generation === -->
+      <div class="sidebar-section">
+        <div
+          class="sidebar-section-header"
+          :class="{ open: sections.generation }"
+          @click="sections.generation = !sections.generation"
+          role="button"
+          :aria-expanded="sections.generation"
+        >
+          <span>Generation</span>
+          <span class="chevron">&#9654;</span>
+        </div>
+        <div class="sidebar-section-body" x-show="sections.generation">
+          <div class="form-row">
+            <label>
+              Temperature
+              <span class="value-display" x-text="temperature.toFixed(2)"></span>
+            </label>
+            <input
+              type="range" min="0" max="2" step="0.01"
+              x-model.number="temperature"
+              aria-label="Temperature"
+            />
+          </div>
+          <div class="form-row">
+            <label>Max output tokens</label>
+            <input
+              type="number" min="64" max="8192" step="64"
+              x-model.number="max_output_tokens"
+              aria-label="Max output tokens"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- === System Prompt (collapsible, default closed) === -->
+      <div class="sidebar-section">
+        <div
+          class="sidebar-section-header"
+          :class="{ open: sections.systemPrompt }"
+          @click="sections.systemPrompt = !sections.systemPrompt"
+          role="button"
+          :aria-expanded="sections.systemPrompt"
+        >
+          <span>System Prompt</span>
+          <span class="chevron">&#9654;</span>
+        </div>
+        <div class="sidebar-section-body" x-show="sections.systemPrompt">
+          <div class="form-row">
+            <textarea
+              x-model="systemPrompt"
+              rows="6"
+              aria-label="System prompt"
+              placeholder="System prompt..."
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- === Ingest Panel === -->
+      <div class="sidebar-section">
+        <div
+          class="sidebar-section-header"
+          :class="{ open: sections.ingest }"
+          @click="sections.ingest = !sections.ingest"
+          role="button"
+          :aria-expanded="sections.ingest"
+        >
+          <span>Ingest</span>
+          <span class="chevron">&#9654;</span>
+        </div>
+        <div class="sidebar-section-body" x-show="sections.ingest">
+
+          <div x-show="keyStatus !== 'valid'" class="warning-banner">
+            &#9888; Validate API key in settings first
+          </div>
+
+          <div class="form-row">
+            <label>Collection name</label>
+            <input
+              type="text"
+              x-model="collection"
+              placeholder="default"
+              aria-label="Collection name"
+            />
+          </div>
+
+          <div class="form-row">
+            <label>Paste text</label>
+            <textarea
+              x-model="ingestText"
+              rows="5"
+              placeholder="Paste document text here..."
+              aria-label="Ingest text"
+              :disabled="ingestFiles.length > 0"
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <label>Or upload files (.txt / .pdf)</label>
+            <input
+              type="file"
+              accept=".txt,.pdf"
+              multiple
+              @change="ingestFiles = Array.from($event.target.files)"
+              aria-label="Upload files"
+              :disabled="!!ingestText"
+            />
+            <div x-show="ingestFiles.length > 0" style="font-size:11px;color:var(--text-secondary)">
+              <template x-for="f in ingestFiles" :key="f.name">
+                <div x-text="f.name"></div>
+              </template>
+            </div>
+          </div>
+
+          <div x-show="ingestFiles.length > 0 && ingestText" class="warning-banner">
+            Using files — text field will be ignored.
+          </div>
+
+          <button
+            class="btn btn-primary"
+            :class="{ 'btn-loading': isIngesting }"
+            @click="ingest()"
+            :disabled="isIngesting || keyStatus !== 'valid' || (!ingestText && ingestFiles.length === 0) || !collection.trim()"
+          >
+            <span class="btn-text">Ingest</span>
+          </button>
+
+          <div
+            x-show="ingestResult"
+            class="ingest-result"
+            :class="ingestResult && ingestResult.error ? 'error' : 'success'"
+            x-text="ingestResult ? (ingestResult.error || formatIngestResult(ingestResult)) : ''"
+          ></div>
+
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- ---- RETRIEVAL VIEW ---- -->
+    <section id="retrieval-view">
+
+      <!-- Chroma mode -->
+      <div
+        id="chroma-view"
+        x-show="backend === 'chroma'"
+        style="flex:1;display:flex;flex-direction:column;overflow:hidden;"
+      >
+        <div class="retrieval-header">
+          <span class="retrieval-label">Chunks</span>
+          <span
+            class="event-badge"
+            :class="{ active: isQuerying }"
+            x-text="chunks.length ? chunks.length + ' retrieved' : 'none'"
+          ></span>
+          <div class="retrieval-spacer"></div>
+          <span class="timing-display" x-show="embedTiming" x-text="'embed ' + embedTiming + 'ms'"></span>
+        </div>
+
+        <div id="chunks-container">
+          <template x-if="!chunks.length && !isQuerying">
+            <div class="retrieval-empty">
+              <span>&#9635;</span>
+              <span>Ask a question to retrieve chunks</span>
+            </div>
+          </template>
+
+          <template x-for="chunk in chunks" :key="chunk.id">
+            <div class="chunk-card" :class="{ scored: chunk.score !== undefined }">
+              <div class="chunk-card-header">
+                <span class="chunk-id" x-text="'#' + (chunk.id || chunk.rank)"></span>
+                <span class="chunk-rank" x-text="'rank ' + chunk.rank"></span>
+                <span class="chunk-score" x-show="chunk.score !== undefined" x-text="formatScore(chunk.score)"></span>
+              </div>
+              <div class="score-bar-track">
+                <div
+                  class="score-bar-fill"
+                  :style="'width:' + (chunk.score !== undefined ? (chunk.score * 100) : 0) + '%'"
+                ></div>
+              </div>
+              <div class="chunk-text" x-text="chunk.text"></div>
+            </div>
+          </template>
+        </div>
+      </div>
+
+      <!-- Graph mode -->
+      <div
+        id="graph-view"
+        x-show="backend === 'graph'"
+        style="flex:1;display:flex;flex-direction:column;overflow:hidden;"
+      >
+        <div class="retrieval-header">
+          <span class="retrieval-label">Knowledge Graph</span>
+          <span
+            class="event-badge"
+            :class="{ active: isQuerying }"
+            x-text="graphNodes.length ? graphNodes.length + ' nodes · ' + graphEdges.length + ' edges' : 'none'"
+          ></span>
+          <div class="retrieval-spacer"></div>
+          <div class="graph-legend">
+            <div class="graph-legend-item">
+              <div class="legend-dot"></div>
+              <span>Entity</span>
+            </div>
+            <div class="graph-legend-item">
+              <div class="legend-line"></div>
+              <span>Relation</span>
+            </div>
+          </div>
+          <span class="timing-display" x-show="embedTiming" x-text="'embed ' + embedTiming + 'ms'"></span>
+        </div>
+
+        <div
+          id="graph-container"
+          style="flex:1;"
+          x-init="$watch('backend', v => { if(v === 'graph') $nextTick(() => initGraph()); })"
+        ></div>
+
+        <template x-if="backend === 'graph' && !graphNodes.length && !isQuerying">
+          <div class="retrieval-empty" style="position:absolute;inset:36px 0 0;pointer-events:none;">
+            <span>&#9671;</span>
+            <span>Graph will render here after query</span>
+          </div>
+        </template>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ===================== ANSWER PANEL ===================== -->
+  <footer id="answer-panel">
+    <div class="query-bar">
+      <input
+        type="text"
+        id="question-input"
+        x-model="question"
+        placeholder="Ask a question about your documents..."
+        @keydown.enter="!isQuerying && query()"
+        :disabled="isQuerying"
+        aria-label="Question"
+      />
+      <button
+        id="query-btn"
+        class="btn btn-primary"
+        :class="{ 'btn-loading': isQuerying }"
+        @click="query()"
+        :disabled="isQuerying || !question.trim() || keyStatus !== 'valid'"
+        aria-label="Submit query"
+      >
+        <span class="btn-text">Query</span>
+      </button>
+    </div>
+
+    <div
+      id="answer-text"
+      role="region"
+      aria-live="polite"
+      aria-label="Answer"
+      :class="{ streaming: isQuerying && !answerDone, done: answerDone }"
+    ><template x-if="!answer && !isQuerying"><span class="answer-placeholder">Answer will appear here...</span></template><template x-if="answer" ><span x-text="answer"></span></template></div>
+  </footer>
+
+  <!-- ===================== SETTINGS MODAL ===================== -->
+  <div
+    id="settings-modal"
+    x-show="settingsOpen"
+    x-transition:enter="transition-none"
+    class="modal-overlay"
+    @click.self="settingsOpen = false"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Settings"
+  >
+    <div class="modal-panel" @click.stop>
+      <div class="modal-header">
+        <span class="modal-title">Settings</span>
+        <button class="btn btn-icon" @click="settingsOpen = false" aria-label="Close settings">&#x2715;</button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- API Key -->
+        <div class="modal-group">
+          <label class="modal-label" for="api-key-input">API Key (Gemini / Google AI)</label>
+          <div class="api-key-row">
+            <input
+              type="password"
+              id="api-key-input"
+              x-model="apiKey"
+              placeholder="AIza..."
+              @keydown.enter="testKey()"
+              autocomplete="off"
+              aria-label="API Key"
+            />
+            <button
+              class="btn"
+              :class="{ 'btn-loading': keyStatus === 'validating', 'btn-primary': keyStatus !== 'validating' }"
+              @click="testKey()"
+              :disabled="keyStatus === 'validating' || !apiKey.trim()"
+              aria-label="Test API key"
+            >
+              <span class="btn-text">Test</span>
+            </button>
+          </div>
+          <div class="key-status" :class="'status-' + keyStatus">
+            <div class="status-dot"></div>
+            <span class="status-label" x-text="keyStatusLabel()"></span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Generation model -->
+        <div class="modal-group">
+          <label class="modal-label" for="gen-model-select">Generation model</label>
+          <select
+            id="gen-model-select"
+            x-model="selectedGenModel"
+            :disabled="!genModels.length"
+            aria-label="Generation model"
+          >
+            <option value="" disabled x-show="!genModels.length">Validate key to load models</option>
+            <template x-for="m in genModels" :key="m">
+              <option :value="m" x-text="m"></option>
+            </template>
+          </select>
+        </div>
+
+        <!-- Embedding model -->
+        <div class="modal-group">
+          <label class="modal-label" for="embed-model-select">Embedding model</label>
+          <select
+            id="embed-model-select"
+            x-model="selectedEmbedModel"
+            :disabled="!embedModels.length"
+            aria-label="Embedding model"
+          >
+            <option value="" disabled x-show="!embedModels.length">Validate key to load models</option>
+            <template x-for="m in embedModels" :key="m">
+              <option :value="m" x-text="m"></option>
+            </template>
+          </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Quick tuning summary -->
+        <div class="modal-group">
+          <span class="modal-label">Active configuration</span>
+          <div class="ingest-result" style="border-color:var(--border);">
+            <span>Backend: </span><span class="mono" x-text="backend"></span><br/>
+            <span>Collection: </span><span class="mono" x-text="collection || 'default'"></span><br/>
+            <span>Chunk size: </span><span class="mono" x-text="chunk_size"></span>
+            <span> / overlap: </span><span class="mono" x-text="chunk_overlap"></span><br/>
+            <span>Top-K: </span><span class="mono" x-text="top_k"></span>
+            <span> / Temp: </span><span class="mono" x-text="temperature.toFixed(2)"></span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SCRIPTS ===================== -->
+  <script src="/static/vendor/vis-network.min.js"></script>
+  <!-- app.js must come before alpine.min.js — defer scripts execute in order,
+       so arenaApp() is defined before Alpine scans x-data attributes. -->
+  <script src="/static/app.js" defer></script>
+  <script src="/static/vendor/alpine.min.js" defer></script>
+
+</body>
+</html>
