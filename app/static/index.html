@@ -28,6 +28,13 @@
       title="Knowledge graph backend"
     >&#x25C6; GRAPH</button>
 
+    <button
+      class="btn btn-backend btn-compare"
+      :class="{ active: backend === 'compare' }"
+      @click="setBackend('compare')"
+      title="Run both backends side-by-side"
+    >&#x2694; COMPARE</button>
+
     <div class="header-spacer"></div>
 
     <button
@@ -430,6 +437,83 @@
         </template>
       </div>
 
+      <!-- Compare mode — split panel -->
+      <div
+        id="compare-view"
+        x-show="backend === 'compare'"
+        style="flex:1;display:flex;flex-direction:row;overflow:hidden;gap:1px;"
+      >
+
+        <!-- Left: Chroma side -->
+        <div class="compare-panel compare-panel-chroma">
+          <div class="retrieval-header">
+            <span class="compare-side-badge badge-chroma">&#x26A1; CHROMA</span>
+            <span
+              class="event-badge"
+              :class="{ active: isQuerying }"
+              x-text="compareChromaChunks.length ? compareChromaChunks.length + ' chunks' : 'none'"
+            ></span>
+            <div class="retrieval-spacer"></div>
+            <span class="timing-display" x-show="embedTiming" x-text="'embed ' + embedTiming + 'ms'"></span>
+          </div>
+          <div class="compare-chunks-container">
+            <template x-if="!compareChromaChunks.length && !isQuerying">
+              <div class="retrieval-empty">
+                <span>&#9635;</span>
+                <span>Vector chunks will appear here</span>
+              </div>
+            </template>
+            <template x-for="chunk in compareChromaChunks" :key="chunk.id">
+              <div class="chunk-card" :class="{ scored: chunk.score !== undefined }">
+                <div class="chunk-card-header">
+                  <span class="chunk-id" x-text="'#' + (chunk.id || chunk.rank)"></span>
+                  <span class="chunk-rank" x-text="'rank ' + chunk.rank"></span>
+                  <span class="chunk-score" x-show="chunk.score !== undefined" x-text="formatScore(chunk.score)"></span>
+                </div>
+                <div class="score-bar-track">
+                  <div
+                    class="score-bar-fill"
+                    :style="'width:' + (chunk.score !== undefined ? (chunk.score * 100) : 0) + '%'"
+                  ></div>
+                </div>
+                <div class="chunk-text" x-text="chunk.text"></div>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="compare-divider"></div>
+
+        <!-- Right: Graph side -->
+        <div class="compare-panel compare-panel-graph">
+          <div class="retrieval-header">
+            <span class="compare-side-badge badge-graph">&#x25C6; GRAPH</span>
+            <span
+              class="event-badge"
+              :class="{ active: isQuerying }"
+              x-text="compareGraphNodes.length ? compareGraphNodes.length + ' nodes · ' + compareGraphEdges.length + ' edges' : 'none'"
+            ></span>
+            <div class="retrieval-spacer"></div>
+            <div class="graph-legend">
+              <div class="graph-legend-item"><div class="legend-dot"></div><span>Entity</span></div>
+              <div class="graph-legend-item"><div class="legend-line"></div><span>Relation</span></div>
+            </div>
+          </div>
+          <div
+            id="compare-graph-container"
+            style="flex:1;"
+          ></div>
+          <template x-if="backend === 'compare' && !compareGraphNodes.length && !isQuerying">
+            <div class="retrieval-empty" style="position:absolute;inset:36px 0 0;pointer-events:none;">
+              <span>&#9671;</span>
+              <span>Knowledge graph will render here</span>
+            </div>
+          </template>
+        </div>
+
+      </div>
+
     </section>
 
   </main>
@@ -458,13 +542,34 @@
       </button>
     </div>
 
+    <!-- Single-backend answer -->
     <div
       id="answer-text"
+      x-show="backend !== 'compare'"
       role="region"
       aria-live="polite"
       aria-label="Answer"
       :class="{ streaming: isQuerying && !answerDone, done: answerDone }"
-    ><template x-if="!answer && !isQuerying"><span class="answer-placeholder">Answer will appear here...</span></template><template x-if="answer" ><span x-text="answer"></span></template></div>
+    ><template x-if="!answer && !isQuerying"><span class="answer-placeholder">Answer will appear here...</span></template><template x-if="answer"><span x-text="answer"></span></template></div>
+
+    <!-- Compare mode: two answers -->
+    <div id="compare-answers" x-show="backend === 'compare'">
+      <div class="compare-answer-panel">
+        <div class="compare-answer-label badge-chroma">&#x26A1; CHROMA answer</div>
+        <div
+          class="compare-answer-text"
+          :class="{ streaming: isQuerying && !compareChromaDone, done: compareChromaDone }"
+        ><template x-if="!compareAnswerChroma && !isQuerying"><span class="answer-placeholder">Chroma answer will appear here...</span></template><template x-if="compareAnswerChroma"><span x-text="compareAnswerChroma"></span></template></div>
+      </div>
+      <div class="compare-answer-divider"></div>
+      <div class="compare-answer-panel">
+        <div class="compare-answer-label badge-graph">&#x25C6; GRAPH answer</div>
+        <div
+          class="compare-answer-text"
+          :class="{ streaming: isQuerying && !compareGraphDone, done: compareGraphDone }"
+        ><template x-if="!compareAnswerGraph && !isQuerying"><span class="answer-placeholder">Graph answer will appear here...</span></template><template x-if="compareAnswerGraph"><span x-text="compareAnswerGraph"></span></template></div>
+      </div>
+    </div>
   </footer>
 
   <!-- ===================== SETTINGS MODAL ===================== -->

@@ -22,7 +22,7 @@ class VectorStore:
         ids: list[str],
     ) -> None:
         col = self.get_or_create_collection(collection)
-        col.add(documents=chunks, embeddings=embeddings, ids=ids)
+        col.upsert(documents=chunks, embeddings=embeddings, ids=ids)
 
     def query(
         self,

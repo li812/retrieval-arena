@@ -23,15 +23,17 @@ class GraphExtractionAgent:
         try:
             triples = self._parse_json_array(raw)
         except (json.JSONDecodeError, ValueError):
-            # Retry once: ask Gemini to fix the malformed JSON
-            fix_prompt = (
-                "The following text is supposed to be a JSON array of triples but has a syntax error. "
-                "Return ONLY the corrected valid JSON array:\n\n" + raw
-            )
-            fix_resp = client.models.generate_content(
-                model=model, contents=[fix_prompt], config=config
-            )
-            triples = self._parse_json_array(fix_resp.text.strip())
+            try:
+                fix_prompt = (
+                    "The following text is supposed to be a JSON array of triples but has a syntax error. "
+                    "Return ONLY the corrected valid JSON array:\n\n" + raw
+                )
+                fix_resp = client.models.generate_content(
+                    model=model, contents=[fix_prompt], config=config
+                )
+                triples = self._parse_json_array(fix_resp.text.strip())
+            except (json.JSONDecodeError, ValueError):
+                return []
 
         return [
             t for t in triples

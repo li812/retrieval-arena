@@ -12,6 +12,7 @@ class ChunkingStrategy(str, Enum):
 class Backend(str, Enum):
     chroma = "chroma"
     graph = "graph"
+    compare = "compare"
 
 
 class TuningParams(BaseModel):

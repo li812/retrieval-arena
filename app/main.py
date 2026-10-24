@@ -176,11 +176,128 @@ async def query(
         system_prompt=system_prompt,
     )
 
+    if backend == "compare":
+        stream = _stream_compare(question, collection, api_key, gen_model, embedding_model, tuning)
+    else:
+        stream = _stream_query(question, backend, collection, api_key, gen_model, embedding_model, tuning)
+
     return StreamingResponse(
-        _stream_query(question, backend, collection, api_key, gen_model, embedding_model, tuning),
+        stream,
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+async def _stream_compare(
+    question: str,
+    collection: str,
+    api_key: str,
+    gen_model: str,
+    embedding_model: str,
+    tuning: TuningParams,
+) -> AsyncGenerator[str, None]:
+    """Run both backends in parallel and prefix every event with 'side' (chroma|graph)."""
+    try:
+        yield _sse("compare_started", {})
+
+        t0 = time.perf_counter()
+        embedding = await asyncio.to_thread(
+            _embedding.embed_query, question, api_key, embedding_model
+        )
+        elapsed_ms = int((time.perf_counter() - t0) * 1000)
+        yield _sse("embedding_done", {"duration_ms": elapsed_ms})
+
+        # Run both retrievals concurrently
+        chroma_task = asyncio.create_task(
+            asyncio.to_thread(
+                lambda: list(_retrieval.retrieve_chroma(question, collection, embedding, tuning))
+            )
+        )
+        graph_task = asyncio.create_task(
+            asyncio.to_thread(
+                lambda: list(
+                    _retrieval.retrieve_graph(question, collection, tuning, api_key, gen_model)
+                )
+            )
+        )
+
+        chroma_events, graph_events = await asyncio.gather(chroma_task, graph_task)
+
+        chroma_chunks: list[dict] = []
+        for ev in chroma_events:
+            yield _sse("chroma_" + ev["event"], ev["data"])
+            if ev["event"] == "context_assembled":
+                chroma_chunks = ev["data"].get("chunks", [])
+
+        graph_triples: list[dict] = []
+        for ev in graph_events:
+            yield _sse("graph_" + ev["event"], ev["data"])
+            if ev["event"] == "context_assembled":
+                graph_triples = ev["data"].get("triples", [])
+
+        chroma_context = (
+            "\n\n".join(f"[{i + 1}] {c['text']}" for i, c in enumerate(chroma_chunks))
+            if chroma_chunks
+            else "No relevant context found in the vector store."
+        )
+        graph_context = (
+            "\n".join(
+                f"{t['subject']} —[{t['relation']}]→ {t['object']}"
+                for t in graph_triples
+            )
+            if graph_triples
+            else "No relevant context found in the knowledge graph."
+        )
+
+        # Both generation threads push (side, payload) tuples into one shared queue.
+        # This lets us drain a single blocking queue and forward tokens to SSE without polling.
+        combined_q: queue.SimpleQueue = queue.SimpleQueue()
+        DONE_CHROMA = object()
+        DONE_GRAPH = object()
+
+        def _gen_chroma():
+            try:
+                for token in _generation.stream_answer(
+                    question, chroma_context, tuning.system_prompt,
+                    api_key, gen_model, tuning.temperature, tuning.max_output_tokens,
+                ):
+                    combined_q.put(("chroma_token", token))
+            except Exception as exc:
+                combined_q.put(("chroma_error", str(exc)))
+            finally:
+                combined_q.put(("sentinel", DONE_CHROMA))
+
+        def _gen_graph():
+            try:
+                for token in _generation.stream_answer(
+                    question, graph_context, tuning.system_prompt,
+                    api_key, gen_model, tuning.temperature, tuning.max_output_tokens,
+                ):
+                    combined_q.put(("graph_token", token))
+            except Exception as exc:
+                combined_q.put(("graph_error", str(exc)))
+            finally:
+                combined_q.put(("sentinel", DONE_GRAPH))
+
+        Thread(target=_gen_chroma, daemon=True).start()
+        Thread(target=_gen_graph, daemon=True).start()
+
+        done_count = 0
+        while done_count < 2:
+            kind, payload = await asyncio.to_thread(combined_q.get)
+            if kind == "sentinel":
+                done_count += 1
+            elif kind == "chroma_token":
+                yield _sse("chroma_answer_token", {"token": payload})
+            elif kind == "graph_token":
+                yield _sse("graph_answer_token", {"token": payload})
+            elif kind in ("chroma_error", "graph_error"):
+                yield _sse(kind, {"message": payload})
+
+        yield _sse("done", {})
+
+    except Exception as exc:
+        yield _sse("error", {"message": str(exc)})
 
 
 async def _stream_query(

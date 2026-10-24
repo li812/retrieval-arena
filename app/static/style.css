@@ -39,6 +39,10 @@
   --accent: var(--accent-chroma);
 }
 
+.mode-compare {
+  --accent: var(--accent-chroma);
+}
+
 /* ----- Reset & Base ----- */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -68,7 +72,8 @@ code,
 .chunk-id,
 .model-name,
 .token-count,
-#answer-text {
+#answer-text,
+.compare-answer-text {
   font-family: var(--font-mono);
 }
 
@@ -951,6 +956,139 @@ input[type="range"]:focus-visible {
   footer#answer-panel {
     min-height: 160px;
   }
+}
+
+/* =========================================================
+   Compare mode
+   ========================================================= */
+
+#compare-view {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: row;
+}
+
+.compare-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  min-width: 0;
+}
+
+.compare-panel-chroma {
+  --accent: var(--accent-chroma);
+}
+
+.compare-panel-graph {
+  --accent: var(--accent-graph);
+}
+
+.compare-divider {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.compare-chunks-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  align-content: start;
+}
+
+.compare-side-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: var(--radius);
+  border: 1px solid currentColor;
+}
+
+.badge-chroma {
+  color: var(--accent-chroma);
+  border-color: color-mix(in srgb, var(--accent-chroma) 40%, transparent);
+}
+
+.badge-graph {
+  color: var(--accent-graph);
+  border-color: color-mix(in srgb, var(--accent-graph) 40%, transparent);
+}
+
+/* Compare button */
+.btn-compare {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.btn-compare.active {
+  border-color: color-mix(in srgb, var(--accent-chroma) 60%, var(--accent-graph) 40%);
+  color: var(--accent-chroma);
+  background: color-mix(in srgb, var(--accent-chroma) 6%, var(--accent-graph) 4%);
+}
+
+/* Compare answers */
+#compare-answers {
+  flex: 1;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  min-height: 80px;
+}
+
+.compare-answer-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.compare-answer-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.compare-answer-text {
+  flex: 1;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  line-height: 1.7;
+  color: var(--text-primary);
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.compare-answer-text.streaming::after {
+  content: '▋';
+  display: inline-block;
+  color: var(--accent);
+  animation: cursor-blink 1s step-end infinite;
+}
+
+.compare-answer-text.done::after {
+  content: none;
+}
+
+.compare-answer-divider {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
 }
 
 /* =========================================================

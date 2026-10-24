@@ -31,6 +31,12 @@ function arenaApp() {
     answerDone: false,
     embedTiming: null,
 
+    // --- Compare mode ---
+    compareAnswerChroma: '',
+    compareAnswerGraph: '',
+    compareChromaDone: false,
+    compareGraphDone: false,
+
     // --- Ingest ---
     ingestText: '',
     ingestFiles: [],
@@ -43,6 +49,14 @@ function arenaApp() {
     network: null,
     _nodesDS: null,
     _edgesDS: null,
+
+    // Compare-mode separate datasets
+    compareChromaChunks: [],
+    compareGraphNodes: [],
+    compareGraphEdges: [],
+    compareNetwork: null,
+    _compareNodesDS: null,
+    _compareEdgesDS: null,
 
     // --- Event log ---
     eventLog: [],
@@ -70,7 +84,7 @@ function arenaApp() {
     init() {
       document.body.className = 'mode-chroma';
       this.$watch('backend', v => {
-        document.body.className = v === 'chroma' ? 'mode-chroma' : 'mode-graph';
+        document.body.className = v === 'chroma' ? 'mode-chroma' : v === 'graph' ? 'mode-graph' : 'mode-compare';
       });
     },
 
@@ -81,9 +95,12 @@ function arenaApp() {
     setBackend(b) {
       if (this.backend === b) return;
       this.backend = b;
-      document.body.className = b === 'chroma' ? 'mode-chroma' : 'mode-graph';
+      document.body.className = b === 'chroma' ? 'mode-chroma' : b === 'graph' ? 'mode-graph' : 'mode-compare';
       if (b === 'graph') {
         this.$nextTick(() => this.initGraph());
+      }
+      if (b === 'compare') {
+        this.$nextTick(() => this.initCompareGraph());
       }
     },
 
@@ -202,9 +219,19 @@ function arenaApp() {
       this.graphEdges = [];
       this.embedTiming = null;
       this.eventLog = [];
+      this.compareAnswerChroma = '';
+      this.compareAnswerGraph = '';
+      this.compareChromaDone = false;
+      this.compareGraphDone = false;
+      this.compareChromaChunks = [];
+      this.compareGraphNodes = [];
+      this.compareGraphEdges = [];
 
       if (this.backend === 'graph') {
         this.initGraph();
+      }
+      if (this.backend === 'compare') {
+        this.initCompareGraph();
       }
 
       const params = new URLSearchParams({
@@ -248,7 +275,6 @@ function arenaApp() {
           }
         }
 
-        // Process any remaining buffer content
         if (buffer.trim()) this.handleSSEBlock(buffer);
 
       } catch (err) {
@@ -292,6 +318,9 @@ function arenaApp() {
           }
           break;
 
+        case 'compare_started':
+          break;
+
         case 'candidates_found':
           this.chunks = [];
           this.graphNodes = [];
@@ -311,37 +340,56 @@ function arenaApp() {
         }
 
         case 'hop_traversed': {
-          if (!data.triples || !Array.isArray(data.triples)) break;
-          const newNodes = [];
-          const newEdges = [];
-          const existingIds = new Set(this.graphNodes.map(n => n.id));
-
-          for (const triple of data.triples) {
-            const subj = String(triple.subject || '');
-            const obj = String(triple.object || '');
-            const rel = String(triple.relation || triple.predicate || '');
-            if (!subj || !obj) continue;
-
-            if (!existingIds.has(subj)) {
-              newNodes.push({ id: subj, label: subj });
-              existingIds.add(subj);
-              this.graphNodes.push({ id: subj, label: subj });
-            }
-            if (!existingIds.has(obj)) {
-              newNodes.push({ id: obj, label: obj });
-              existingIds.add(obj);
-              this.graphNodes.push({ id: obj, label: obj });
-            }
-
-            const edgeId = `${subj}__${rel}__${obj}`;
-            newEdges.push({ id: edgeId, from: subj, to: obj, label: rel });
-            this.graphEdges.push({ id: edgeId, from: subj, to: obj, label: rel });
-          }
-
-          if (this._nodesDS) this._nodesDS.update(newNodes);
-          if (this._edgesDS) this._edgesDS.update(newEdges);
+          this._addTriplesTo(data.triples || [], this._nodesDS, this._edgesDS, this.graphNodes, this.graphEdges);
           break;
         }
+
+        // ---- Compare mode: chroma side ----
+        case 'chroma_candidates_found':
+          this.compareChromaChunks = [];
+          break;
+
+        case 'chroma_chunk_scored': {
+          const chunk = {
+            id: data.chunk_id ?? data.id ?? this.compareChromaChunks.length,
+            rank: data.rank ?? this.compareChromaChunks.length + 1,
+            score: data.score,
+            text: data.text ?? data.content ?? '',
+          };
+          this.compareChromaChunks.push(chunk);
+          break;
+        }
+
+        case 'chroma_answer_token':
+          if (data.token !== undefined) this.compareAnswerChroma += data.token;
+          break;
+
+        case 'chroma_error':
+          this.compareAnswerChroma = 'Error: ' + (data.message || JSON.stringify(data));
+          this.compareChromaDone = true;
+          break;
+
+        // ---- Compare mode: graph side ----
+        case 'graph_candidates_found':
+          this.compareGraphNodes = [];
+          this.compareGraphEdges = [];
+          if (this._compareNodesDS) this._compareNodesDS.clear();
+          if (this._compareEdgesDS) this._compareEdgesDS.clear();
+          break;
+
+        case 'graph_hop_traversed': {
+          this._addTriplesTo(data.triples || [], this._compareNodesDS, this._compareEdgesDS, this.compareGraphNodes, this.compareGraphEdges);
+          break;
+        }
+
+        case 'graph_answer_token':
+          if (data.token !== undefined) this.compareAnswerGraph += data.token;
+          break;
+
+        case 'graph_error':
+          this.compareAnswerGraph = 'Error: ' + (data.message || JSON.stringify(data));
+          this.compareGraphDone = true;
+          break;
 
         case 'context_assembled':
           break;
@@ -356,6 +404,8 @@ function arenaApp() {
 
         case 'done':
           this.answerDone = true;
+          this.compareChromaDone = true;
+          this.compareGraphDone = true;
           this.isQuerying = false;
           break;
 
@@ -371,69 +421,98 @@ function arenaApp() {
     },
 
     // =========================================================
-    // vis-network (graph mode)
+    // vis-network helpers
     // =========================================================
+
+    _addTriplesTo(triples, nodesDS, edgesDS, nodesArr, edgesArr) {
+      if (!triples.length) return;
+      const newNodes = [];
+      const newEdges = [];
+      const existingIds = new Set(nodesArr.map(n => n.id));
+
+      for (const triple of triples) {
+        const subj = String(triple.subject || '');
+        const obj = String(triple.object || '');
+        const rel = String(triple.relation || triple.predicate || '');
+        if (!subj || !obj) continue;
+
+        if (!existingIds.has(subj)) {
+          newNodes.push({ id: subj, label: subj });
+          existingIds.add(subj);
+          nodesArr.push({ id: subj, label: subj });
+        }
+        if (!existingIds.has(obj)) {
+          newNodes.push({ id: obj, label: obj });
+          existingIds.add(obj);
+          nodesArr.push({ id: obj, label: obj });
+        }
+
+        const edgeId = `${subj}__${rel}__${obj}`;
+        newEdges.push({ id: edgeId, from: subj, to: obj, label: rel });
+        edgesArr.push({ id: edgeId, from: subj, to: obj, label: rel });
+      }
+
+      if (nodesDS) nodesDS.update(newNodes);
+      if (edgesDS) edgesDS.update(newEdges);
+    },
+
+    _makeNetworkOptions() {
+      return {
+        physics: {
+          enabled: true,
+          barnesHut: {
+            gravitationalConstant: -3000,
+            centralGravity: 0.3,
+            springLength: 120,
+          },
+          stabilization: { iterations: 100 },
+        },
+        nodes: {
+          shape: 'dot',
+          size: 14,
+          color: {
+            background: '#1E212B',
+            border: '#F2A65A',
+            highlight: { background: '#F2A65A', border: '#F2A65A' },
+            hover: { background: '#2C3040', border: '#F2A65A' },
+          },
+          font: { color: '#E8E9ED', face: 'JetBrains Mono', size: 11 },
+          borderWidth: 2,
+        },
+        edges: {
+          color: { color: '#2C3040', highlight: '#F2A65A', hover: '#8A8F9C' },
+          arrows: { to: { enabled: true, scaleFactor: 0.6 } },
+          font: { color: '#8A8F9C', face: 'Inter', size: 10, align: 'middle' },
+          smooth: { type: 'curvedCW', roundness: 0.1 },
+          width: 1.5,
+        },
+        background: { color: '#14161B' },
+        interaction: { hover: true, tooltipDelay: 200, hideEdgesOnDrag: true },
+      };
+    },
 
     initGraph() {
       if (typeof vis === 'undefined') return;
-
-      if (this.network) {
-        this.network.destroy();
-        this.network = null;
-      }
-
+      if (this.network) { this.network.destroy(); this.network = null; }
       const container = document.getElementById('graph-container');
       if (!container) return;
-
       const nodesDS = new vis.DataSet([]);
       const edgesDS = new vis.DataSet([]);
       this._nodesDS = nodesDS;
       this._edgesDS = edgesDS;
+      this.network = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, this._makeNetworkOptions());
+    },
 
-      this.network = new vis.Network(
-        container,
-        { nodes: nodesDS, edges: edgesDS },
-        {
-          physics: {
-            enabled: true,
-            barnesHut: {
-              gravitationalConstant: -3000,
-              centralGravity: 0.3,
-              springLength: 120,
-            },
-            stabilization: { iterations: 100 },
-          },
-          nodes: {
-            shape: 'dot',
-            size: 14,
-            color: {
-              background: '#1E212B',
-              border: '#F2A65A',
-              highlight: { background: '#F2A65A', border: '#F2A65A' },
-              hover: { background: '#2C3040', border: '#F2A65A' },
-            },
-            font: {
-              color: '#E8E9ED',
-              face: 'JetBrains Mono',
-              size: 11,
-            },
-            borderWidth: 2,
-          },
-          edges: {
-            color: { color: '#2C3040', highlight: '#F2A65A', hover: '#8A8F9C' },
-            arrows: { to: { enabled: true, scaleFactor: 0.6 } },
-            font: { color: '#8A8F9C', face: 'Inter', size: 10, align: 'middle' },
-            smooth: { type: 'curvedCW', roundness: 0.1 },
-            width: 1.5,
-          },
-          background: { color: '#14161B' },
-          interaction: {
-            hover: true,
-            tooltipDelay: 200,
-            hideEdgesOnDrag: true,
-          },
-        }
-      );
+    initCompareGraph() {
+      if (typeof vis === 'undefined') return;
+      if (this.compareNetwork) { this.compareNetwork.destroy(); this.compareNetwork = null; }
+      const container = document.getElementById('compare-graph-container');
+      if (!container) return;
+      const nodesDS = new vis.DataSet([]);
+      const edgesDS = new vis.DataSet([]);
+      this._compareNodesDS = nodesDS;
+      this._compareEdgesDS = edgesDS;
+      this.compareNetwork = new vis.Network(container, { nodes: nodesDS, edges: edgesDS }, this._makeNetworkOptions());
     },
 
     updateGraph(nodes, edges) {
