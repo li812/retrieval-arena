@@ -27,13 +27,18 @@ Most RAG tutorials show one retrieval strategy. Real systems face a genuine choi
 
 ## Features
 
-- **Three retrieval modes** — Chroma (vector + MMR), Graph (Neo4j BFS), Compare (both simultaneously)
+- **Four modes** — Chroma (vector + MMR), Graph (Neo4j BFS), Compare (both simultaneously), Chat (bots built on your collections)
+- **Retrieval Lab** — dense / BM25 keyword / hybrid (RRF) search, multi-query · HyDE · step-back query transforms, LLM-judge reranking, neighbour-chunk expansion, context ordering and token budgets, source filters, with a per-stage pipeline trace
+- **Answer checks** — LLM groundedness verdict per claim, VADER sentiment on chunks and answers, optional LLM emotion breakdown
+- **Bot Studio** — save a prompt + collection + retrieval recipe + model as a chatbot, test it in a live preview, chat with memory (follow-ups are rewritten into standalone queries), rate replies
+- **MCP both ways** — the app is an MCP server (`/mcp/`) for Claude Code / Desktop / Cursor, and bots can call tools on external MCP servers
+- **Workspace** — query history with restore / re-run / pin, Markdown & JSON export, collections manager, light/dark themes, resizable panels, ⌘K command palette and keyboard shortcuts
 - **Live SSE event stream** — chunk cards and graph edges animate in real time during retrieval
 - **Dual-answer Compare mode** — identical question, both backends, side-by-side streaming answers
 - **Tunable everything** — chunk size, overlap, strategy, top-k, similarity threshold, MMR λ, graph hops, temperature, max tokens
 - **Two chunking strategies** — fixed sliding-window and sentence/paragraph-aware
 - **PDF + plain text ingestion** — single ingest populates both stores
-- **Model selection** — key validation fetches live Gemini model lists; pick any generation or embedding model
+- **Two providers** — Gemini and NVIDIA NIM; key validation discovers the models your key can actually use (NVIDIA models are probed live)
 - **No build step** — Alpine.js served from disk; plain HTML/CSS/JS frontend
 
 ---
@@ -45,7 +50,9 @@ Most RAG tutorials show one retrieval strategy. Real systems face a genuine choi
 | Backend | FastAPI 0.111+ (Python 3.11) |
 | Vector store | ChromaDB (server mode, `HttpClient`) |
 | Knowledge graph | Neo4j 5 |
-| LLM / Embeddings | Google Gemini via `google-genai` SDK |
+| LLM / Embeddings | Google Gemini (`google-genai`) · NVIDIA NIM (OpenAI-compatible API) |
+| App data | SQLite (saved keys, bots, conversations, history, MCP servers) |
+| Agent protocol | MCP Python SDK 2.x (streamable HTTP server + client) |
 | Frontend | Alpine.js 3 — no build step |
 | Graph viz | vis-network 9 |
 | Orchestration | Docker Compose |
@@ -54,7 +61,7 @@ Most RAG tutorials show one retrieval strategy. Real systems face a genuine choi
 
 ## Quick start
 
-**Prerequisites:** Docker Desktop · Google Gemini API key ([get one free](https://aistudio.google.com/app/apikey))
+**Prerequisites:** Docker Desktop · a Google Gemini API key ([get one free](https://aistudio.google.com/app/apikey)) or an NVIDIA NIM key ([build.nvidia.com](https://build.nvidia.com))
 
 ```bash
 # 1. Clone
@@ -88,9 +95,9 @@ Open **http://localhost:8000** — Neo4j takes ~30 s to initialise on first boot
 
 ### 1. Configure your API key
 
-Click **⚙** (top-right). Paste your Gemini API key and click **Test**. On success the generation-model and embedding-model dropdowns populate from the live API.
+Click **⚙** (top-right), pick a provider, paste your key and click **Test**. On success the model dropdowns fill with the models your key can use. Give the key a label and **Save** it to reuse it after reloads.
 
-> Your key lives only in browser memory — it is never written to disk or logged server-side.
+> Saved keys are stored in plain text in the `arena_data` volume (`arena.db`). After saving, the browser only holds the key's id — requests reference it and the server looks the secret up, so keys never appear in URLs or access logs. The app has **no authentication**: keep port 8000 on localhost.
 
 ### 2. Ingest a document
 
@@ -103,6 +110,25 @@ Type a question in the bar at the bottom and press **Enter**. Switch between mod
 - **⚡ CHROMA** — chunk cards appear and score bars fill as `chunk_scored` events stream in
 - **◆ GRAPH** — entity nodes and relationship edges draw hop-by-hop as `hop_traversed` events arrive
 - **⚔ COMPARE** — both panels run simultaneously; two streaming answers appear side-by-side
+- **● CHAT** — talk to a bot (see below)
+
+Press **?** for keyboard shortcuts and **⌘/Ctrl K** for the command palette. Every result lands in **History** (↺) and can be exported as Markdown or JSON.
+
+### 4. Build a chatbot
+
+Switch to **Chat** and click **+ New**: the current Lab settings become a bot draft. In **Bot Studio** set the name, system prompt, collection, knowledge source (vectors, graph or both), model, greeting and starter questions, and try it in the live preview before saving. Conversations are saved per bot; each follow-up is rewritten into a standalone search query before retrieval.
+
+### 5. MCP
+
+**Use the arena from Claude Code** (or any MCP client) — tools `list_collections`, `search_collection`, `graph_query`, `ask_bot`:
+
+```bash
+claude mcp add --transport http retrieval-arena http://localhost:8000/mcp/
+```
+
+Tools run with the key last selected in the UI for the collection's provider. The trailing slash in `/mcp/` matters.
+
+**Give bots tools** — in ⚙ → *MCP servers*, add a streamable-HTTP server (optionally with an `Authorization` header), click **Test** to list its tools, then tick tools per bot in Bot Studio. The studio checks whether the bot's model supports tool calling; small models often answer without calling tools, so prefer a larger model for tool-using bots. stdio servers are disabled unless `ALLOW_STDIO_MCP=true`, because they execute commands inside the API container.
 
 ---
 
@@ -182,19 +208,36 @@ question
 | `max_triples_per_chunk` | 8 | 1–30 | Triples extracted per chunk at ingest |
 | `triple_limit` | 25 | 1–100 | Max triples returned per query |
 
+### Retrieval Lab *(Chroma / Compare / bots)*
+
+| Param | Default | Description |
+|---|---|---|
+| `search_mode` | `dense` | `dense` (embeddings), `keyword` (BM25) or `hybrid` (both, Reciprocal Rank Fusion) |
+| `hybrid_alpha` | 0.5 | Weight of the dense list in hybrid fusion |
+| `fetch_k` | 20 | Candidate pool before reranking / MMR / top-k |
+| `query_transform` | `none` | `multi_query`, `hyde` or `step_back` (one extra LLM call) |
+| `rerank` | `none` | `llm` = generation model scores the pool; NVIDIA rerank models appear when your key can use one |
+| `context_window` | 0 | Neighbouring chunks (±n) added around each hit |
+| `context_order` | `score` | `document` order or `sandwich` (strongest chunks at both ends) |
+| `max_context_tokens` | 0 | Context budget (~4 chars/token); 0 = unlimited |
+| `source_filter` | — | Only search chunks from one ingested file |
+| `entity_match` / `graph_direction` | `contains` / `both` | Graph seed matching and traversal direction |
+| `contextual_headers` | off | Ingest-time: an LLM line situating each chunk in its document is prepended before embedding |
+
 ### Generation
 
 | Param | Default | Range | Description |
 |---|---|---|---|
-| `temperature` | 0.3 | 0–2 | Gemini temperature |
+| `temperature` | 0.3 | 0–2 | Sampling temperature |
 | `max_output_tokens` | 1024 | 1–8192 | Maximum tokens in the answer |
+| `check_groundedness` | off | — | After answering, an LLM judge checks each claim against the context |
 
 ---
 
 ## Resetting data
 
 ```bash
-docker compose down -v   # wipes both ChromaDB and Neo4j volumes
+docker compose down -v   # wipes ChromaDB, Neo4j and the app database (keys, bots, history)
 docker compose up
 ```
 
@@ -211,6 +254,9 @@ docker compose up
 | `NEO4J_PASSWORD` | `playground123` | Neo4j password |
 | `DEFAULT_GEN_MODEL` | `gemini-2.5-flash` | Default generation model |
 | `DEFAULT_EMBED_MODEL` | `gemini-embedding-001` | Default embedding model |
+| `ARENA_DB_PATH` | `arena.db` | SQLite file for keys, bots, conversations, history |
+| `ALLOW_STDIO_MCP` | `false` | Allow stdio MCP servers (they run commands in the container) |
+| `MCP_ALLOWED_HOSTS` | `localhost:*,127.0.0.1:*,[::1]:*` | Host headers accepted by the built-in MCP server |
 
 The only value you typically need to change is `NEO4J_PASSWORD` (if you override `NEO4J_AUTH` in Docker Compose).
 

@@ -42,15 +42,16 @@ services:
       - ./app/config.py:/app/app/config.py
       - ./app/schemas.py:/app/app/schemas.py
       - ./app/services:/app/app/services
-      - ./app/static/index.html:/app/app/static/index.html
-      - ./app/static/app.js:/app/app/static/app.js
-      - ./app/static/style.css:/app/app/static/style.css
+      # Whole directory, not single files: editors that replace a file would otherwise orphan the mount
+      - ./app/static:/app/app/static
+      - arena_data:/app/arena_data
     environment:
       CHROMA_HOST: chromadb
       CHROMA_PORT: "8000"
       NEO4J_URI: "bolt://neo4j:7687"
       NEO4J_USER: "${NEO4J_USER:-neo4j}"
       NEO4J_PASSWORD: "${NEO4J_PASSWORD:-playground123}"
+      ARENA_DB_PATH: "arena_data/arena.db"
     depends_on:
       chromadb:
         condition: service_healthy
@@ -67,3 +68,4 @@ services:
 volumes:
   chroma_data:
   neo4j_data:
+  arena_data:

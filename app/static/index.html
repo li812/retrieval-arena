@@ -4,16 +4,30 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Retrieval Arena</title>
+  <script>
+    // Resolve the theme before first paint so there is no dark/light flash
+    (function () {
+      var pref = 'auto';
+      try { pref = localStorage.getItem('arena.theme') || 'auto'; } catch (e) {}
+      var dark = pref === 'dark' || (pref === 'auto' && !matchMedia('(prefers-color-scheme: light)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    })();
+  </script>
   <link rel="stylesheet" href="/static/vendor/fonts/jetbrains-mono.css" />
   <link rel="stylesheet" href="/static/vendor/fonts/inter.css" />
-  <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/style.css?v=11" />
 </head>
-<body class="mode-chroma" x-data="arenaApp()" x-init="init()">
+<body class="mode-chroma" x-data="Object.assign(arenaApp(), chatMixin())" x-init="init()" @keydown.window="onGlobalKey($event)">
 
   <!-- ===================== HEADER ===================== -->
   <header id="app-header">
-    <span class="header-title">Retrieval Arena</span>
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <span class="header-title">Retrieval Arena</span>
+      <span class="header-tag">RAG LAB</span>
+    </div>
 
+    <div class="mode-switch" role="group" aria-label="Retrieval backend">
     <button
       class="btn btn-backend"
       :class="{ active: backend === 'chroma' }"
@@ -35,14 +49,52 @@
       title="Run both backends side-by-side"
     >&#x2694; COMPARE</button>
 
+    <button
+      class="btn btn-backend btn-chat"
+      :class="{ active: backend === 'chat' }"
+      @click="setBackend('chat')"
+      title="Chat with a bot built on your collections"
+    >&#x25CF; CHAT</button>
+    </div>
+
     <div class="header-spacer"></div>
+
+    <button
+      class="btn btn-icon btn-kbd-hint"
+      @click="openPalette()"
+      title="Command palette (Ctrl/⌘ K)"
+      aria-label="Open command palette"
+    ><span class="kbd-hint-icon">&#x2318;</span><span class="kbd-hint-key">K</span></button>
+
+    <button
+      class="btn btn-icon"
+      @click="openCollections()"
+      title="Collections (D)"
+      aria-label="Manage collections"
+    >&#x25A4;</button>
+
+    <button
+      class="btn btn-icon"
+      @click="openHistory()"
+      title="Query history (H)"
+      aria-label="Query history"
+    >&#x21BA;</button>
+
+    <button
+      class="btn btn-icon"
+      @click="cycleTheme()"
+      :title="'Theme: ' + themePref + ' (click to change)'"
+      :aria-label="'Theme: ' + themePref"
+      x-text="themePref === 'auto' ? '\u25D0' : themePref === 'light' ? '\u2600' : '\u263E'"
+    ></button>
 
     <button
       id="sidebar-toggle"
       class="btn btn-icon"
-      @click="sidebarOpen = !sidebarOpen"
+      @click="toggleSidebar()"
       :aria-expanded="sidebarOpen"
       aria-label="Toggle sidebar"
+      title="Toggle sidebar ( [ )"
     >&#9776;</button>
 
     <button
@@ -60,8 +112,52 @@
     <!-- ---- SIDEBAR ---- -->
     <aside id="sidebar" :class="{ open: sidebarOpen }">
 
+      <!-- === Bots (chat mode) === -->
+      <div class="sidebar-section" x-show="backend === 'chat'">
+        <div class="sidebar-section-header open" role="heading">
+          <span>Bots</span>
+          <button class="btn btn-sm btn-ghost section-action" @click.stop="openStudio()" title="Create a bot from the current arena settings">+ New</button>
+        </div>
+        <div class="sidebar-section-body">
+          <div class="field-hint" x-show="!bots.length">No bots yet. <b>+ New</b> turns your current Lab settings into a bot.</div>
+          <div class="bot-list">
+            <template x-for="b in bots" :key="b.id">
+              <button class="bot-item" :class="{ active: b.id === activeBotId }" @click="selectBot(b)">
+                <span class="bot-emoji" x-text="b.emoji"></span>
+                <span class="bot-text">
+                  <span class="bot-name" x-text="b.name"></span>
+                  <span class="bot-sub" x-text="b.collection + ' · ' + b.backend"></span>
+                </span>
+              </button>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- === Conversations (chat mode) === -->
+      <div class="sidebar-section" x-show="backend === 'chat' && activeBotId">
+        <div class="sidebar-section-header open" role="heading">
+          <span>Conversations</span>
+          <button class="btn btn-sm btn-ghost section-action" @click.stop="newChat()" title="Start a new conversation">+ Chat</button>
+        </div>
+        <div class="sidebar-section-body">
+          <div class="field-hint" x-show="!conversations.length">No conversations yet.</div>
+          <div class="conv-list">
+            <template x-for="c in conversations" :key="c.id">
+              <div class="conv-item" :class="{ active: c.id === activeConvId }">
+                <button class="conv-main" @click="openConversation(c)">
+                  <span class="conv-title" x-text="c.title"></span>
+                  <span class="conv-sub" x-text="c.message_count + ' msgs · ' + relativeTime(c.updated_at)"></span>
+                </button>
+                <button class="btn btn-sm btn-ghost btn-danger-ghost" @click="deleteConversation(c)" title="Delete conversation">&#x2715;</button>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
       <!-- === Chunking === -->
-      <div class="sidebar-section">
+      <div class="sidebar-section" x-show="backend !== 'chat'">
         <div
           class="sidebar-section-header"
           :class="{ open: sections.chunking }"
@@ -112,7 +208,7 @@
       </div>
 
       <!-- === Retrieval — Chroma === -->
-      <div class="sidebar-section" x-show="backend === 'chroma'">
+      <div class="sidebar-section" x-show="backend === 'chroma' || backend === 'compare'">
         <div
           class="sidebar-section-header"
           :class="{ open: sections.retrievalChroma }"
@@ -124,6 +220,28 @@
           <span class="chevron">&#9654;</span>
         </div>
         <div class="sidebar-section-body" x-show="sections.retrievalChroma">
+          <div class="form-row">
+            <label title="Dense = embeddings, Keyword = BM25, Hybrid = both fused with Reciprocal Rank Fusion">Search mode</label>
+            <div class="radio-group">
+              <template x-for="m in [['dense','Dense'],['hybrid','Hybrid'],['keyword','Keyword']]" :key="m[0]">
+                <label><input type="radio" x-model="search_mode" :value="m[0]" /><span x-text="m[1]"></span></label>
+              </template>
+            </div>
+          </div>
+          <div class="form-row" x-show="search_mode === 'hybrid'">
+            <label title="Weight of the dense list in rank fusion; the keyword list gets the rest">
+              Dense ↔ keyword weight
+              <span class="value-display" x-text="hybrid_alpha.toFixed(2)"></span>
+            </label>
+            <input type="range" min="0" max="1" step="0.05" x-model.number="hybrid_alpha" aria-label="Hybrid weight" />
+          </div>
+          <div class="form-row">
+            <label title="How many candidates go into reranking / MMR before the final top-K">
+              Candidate pool
+              <span class="value-display" x-text="fetch_k"></span>
+            </label>
+            <input type="range" min="5" max="60" step="1" x-model.number="fetch_k" aria-label="Candidate pool" />
+          </div>
           <div class="form-row">
             <label>
               Top-K
@@ -160,8 +278,78 @@
         </div>
       </div>
 
+      <!-- === Retrieval Lab === -->
+      <div class="sidebar-section" x-show="backend === 'chroma' || backend === 'compare'">
+        <div
+          class="sidebar-section-header"
+          :class="{ open: sections.lab }"
+          @click="sections.lab = !sections.lab"
+          role="button"
+          :aria-expanded="sections.lab"
+        >
+          <span>Retrieval Lab</span>
+          <span class="chevron">&#9654;</span>
+        </div>
+        <div class="sidebar-section-body" x-show="sections.lab">
+          <div class="form-row">
+            <label for="qt-select">Query transform</label>
+            <select id="qt-select" x-model="query_transform">
+              <option value="none">None</option>
+              <option value="multi_query">Multi-query (paraphrases)</option>
+              <option value="hyde">HyDE (hypothetical answer)</option>
+              <option value="step_back">Step-back (broader question)</option>
+            </select>
+            <div class="field-hint" x-show="query_transform === 'hyde'">Helps vague questions; can hurt precise name/number lookups.</div>
+          </div>
+          <div class="form-row" x-show="query_transform === 'multi_query'">
+            <label>Variants <span class="value-display" x-text="multi_query_n"></span></label>
+            <input type="range" min="1" max="5" step="1" x-model.number="multi_query_n" aria-label="Query variants" />
+          </div>
+          <div class="form-row">
+            <label for="rerank-select">Reranker</label>
+            <select id="rerank-select" x-model="rerank">
+              <option value="none">Off</option>
+              <option value="llm">LLM judge (generation model)</option>
+              <template x-for="m in rerankModels" :key="m.value"><option :value="m.value" x-text="m.label"></option></template>
+            </select>
+          </div>
+          <div class="form-row">
+            <label title="Add neighbouring chunks around each hit to the prompt">Neighbour window</label>
+            <div class="radio-group">
+              <template x-for="w in [0, 1, 2, 3]" :key="w">
+                <label><input type="radio" x-model.number="context_window" :value="w" /><span x-text="w ? '±' + w : 'off'"></span></label>
+              </template>
+            </div>
+          </div>
+          <div class="form-row">
+            <label title="Sandwich puts the strongest chunks at both ends of the prompt">Context order</label>
+            <div class="radio-group">
+              <template x-for="o in [['score','Score'],['document','Document'],['sandwich','Sandwich']]" :key="o[0]">
+                <label><input type="radio" x-model="context_order" :value="o[0]" /><span x-text="o[1]"></span></label>
+              </template>
+            </div>
+          </div>
+          <div class="form-row">
+            <label>
+              Context budget
+              <span class="value-display" x-text="max_context_tokens ? '~' + max_context_tokens + ' tok' : '\u221E'"></span>
+            </label>
+            <input type="range" min="0" max="8000" step="250" x-model.number="max_context_tokens" aria-label="Context token budget" />
+          </div>
+          <div class="form-row">
+            <label for="source-select">Source filter</label>
+            <select id="source-select" x-model="source_filter">
+              <option value="">All sources</option>
+              <template x-for="src in currentSources()" :key="src.name">
+                <option :value="src.name" x-text="src.name + ' (' + src.chunks + ')'"></option>
+              </template>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <!-- === Retrieval — Graph === -->
-      <div class="sidebar-section" x-show="backend === 'graph'">
+      <div class="sidebar-section" x-show="backend === 'graph' || backend === 'compare'">
         <div
           class="sidebar-section-header"
           :class="{ open: sections.retrievalGraph }"
@@ -181,6 +369,22 @@
                   <input type="radio" x-model.number="graph_hops" :value="h" />
                   <span x-text="h"></span>
                 </label>
+              </template>
+            </div>
+          </div>
+          <div class="form-row">
+            <label title="How question entities are matched to graph nodes">Entity match</label>
+            <div class="radio-group">
+              <template x-for="m in [['exact','Exact'],['contains','Contains'],['fuzzy','Fuzzy']]" :key="m[0]">
+                <label><input type="radio" x-model="entity_match" :value="m[0]" /><span x-text="m[1]"></span></label>
+              </template>
+            </div>
+          </div>
+          <div class="form-row">
+            <label title="Follow only outgoing relations, or relations in both directions">Traversal</label>
+            <div class="radio-group">
+              <template x-for="d in [['out','Outgoing'],['both','Both ways']]" :key="d[0]">
+                <label><input type="radio" x-model="graph_direction" :value="d[0]" /><span x-text="d[1]"></span></label>
               </template>
             </div>
           </div>
@@ -210,7 +414,7 @@
       </div>
 
       <!-- === Generation === -->
-      <div class="sidebar-section">
+      <div class="sidebar-section" x-show="backend !== 'chat'">
         <div
           class="sidebar-section-header"
           :class="{ open: sections.generation }"
@@ -241,11 +445,16 @@
               aria-label="Max output tokens"
             />
           </div>
+          <label class="toggle-row" title="After answering, an LLM judge checks each claim against the retrieved context">
+            <input type="checkbox" x-model="check_groundedness" />
+            <span class="toggle-switch" aria-hidden="true"></span>
+            <span>Groundedness check</span>
+          </label>
         </div>
       </div>
 
       <!-- === System Prompt (collapsible, default closed) === -->
-      <div class="sidebar-section">
+      <div class="sidebar-section" x-show="backend !== 'chat'">
         <div
           class="sidebar-section-header"
           :class="{ open: sections.systemPrompt }"
@@ -293,8 +502,19 @@
               x-model="collection"
               placeholder="default"
               aria-label="Collection name"
+              list="collections-list"
+              @change="source_filter = ''"
             />
+            <datalist id="collections-list">
+              <template x-for="c in collections" :key="c.name"><option :value="c.name" x-text="c.chunks + ' chunks'"></option></template>
+            </datalist>
           </div>
+
+          <label class="toggle-row" title="Prefix each chunk with an LLM-written line placing it in the document (one LLM call per chunk)">
+            <input type="checkbox" x-model="contextual_headers" />
+            <span class="toggle-switch" aria-hidden="true"></span>
+            <span>Contextual chunk headers</span>
+          </label>
 
           <div class="form-row">
             <label>Paste text</label>
@@ -348,9 +568,96 @@
       </div>
 
     </aside>
+    <div class="resizer resizer-x" aria-hidden="true"
+         @pointerdown="startResize('sidebar', $event)" @dblclick="resetLayout('sidebar')"
+         title="Drag to resize · double-click to reset"></div>
 
     <!-- ---- RETRIEVAL VIEW ---- -->
     <section id="retrieval-view">
+
+      <!-- Chat mode -->
+      <div id="chat-view" x-show="backend === 'chat'">
+        <template x-if="!activeBot()">
+          <div class="chat-empty">
+            <div class="chat-empty-mark">&#x25CF;</div>
+            <h2>Build a chatbot on your collections</h2>
+            <p>A bot bundles a system prompt, a collection, a retrieval recipe from the Lab and a model. Start from your current settings and tune it in the studio with a live preview.</p>
+            <button class="btn btn-primary" @click="openStudio()"><span class="btn-text">Create a bot</span></button>
+          </div>
+        </template>
+        <template x-if="activeBot()">
+          <div class="chat-shell">
+            <div class="retrieval-header chat-header">
+              <span class="bot-emoji bot-emoji-lg" x-text="activeBot().emoji"></span>
+              <div class="chat-header-text">
+                <span class="chat-bot-name" x-text="activeBot().name"></span>
+                <span class="chat-bot-sub" x-text="activeBot().collection + ' · ' + activeBot().backend + ' · ' + activeBot().gen_model"></span>
+              </div>
+              <div class="retrieval-spacer"></div>
+              <button class="btn btn-sm" @click="applyBotToArena(activeBot())" title="Load this bot's settings into the arena">To arena</button>
+              <button class="btn btn-sm btn-primary" @click="openStudio(activeBot())"><span class="btn-text">Edit bot</span></button>
+            </div>
+            <div id="chat-thread" class="chat-thread">
+              <template x-if="!chatMessages.length">
+                <div class="chat-welcome">
+                  <div class="bot-emoji bot-emoji-xl" x-text="activeBot().emoji"></div>
+                  <p x-text="activeBot().greeting || ('Ask ' + activeBot().name + ' anything about ' + activeBot().collection + '.')"></p>
+                  <div class="starter-row">
+                    <template x-for="st in activeBot().starters" :key="st">
+                      <button class="starter" @click="sendChat(st)" x-text="st"></button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template x-for="(m, mi) in chatMessages" :key="mi">
+            <div class="chat-msg" :class="'chat-msg-' + m.role">
+              <div class="chat-bubble">
+                <div class="chat-rewrite" x-show="m.meta.query" :title="'Searched the knowledge base for this standalone query'">&#x2315; <span x-text="m.meta.query"></span></div>
+                <template x-for="call in m.meta.tool_calls" :key="call.id">
+                  <details class="tool-card" :class="'tool-' + call.status">
+                    <summary><span class="tool-icon">&#x2699;</span> <span x-text="call.name"></span> <span class="tool-status" x-text="call.status"></span></summary>
+                    <div class="tool-io"><b>input</b><pre x-text="JSON.stringify(call.arguments, null, 2)"></pre></div>
+                    <div class="tool-io" x-show="call.result || call.error"><b x-text="call.error ? 'error' : 'output'"></b><pre x-text="call.error || call.result"></pre></div>
+                  </details>
+                </template>
+                <div class="chat-text" x-show="m.role === 'user'" x-text="m.content"></div>
+                <div class="chat-text chat-md" x-show="m.role === 'assistant'" :class="{ streaming: m.streaming }" x-html="m.role === 'assistant' ? renderMarkdown(m.content || (m.streaming ? '' : '…')) : ''"></div>
+                <template x-if="m.role === 'assistant' && !m.streaming">
+                  <div class="chat-msg-footer">
+                    <button class="btn btn-sm btn-ghost" x-show="m.meta.chunks.length || m.meta.triples.length" @click="m.showSources = !m.showSources"
+                            x-text="(m.showSources ? '\u25BE ' : '\u25B8 ') + (m.meta.chunks.length + m.meta.triples.length) + ' sources'"></button>
+                    <span class="eval-badge eval-pending" x-show="m.evaluating">checking…</span>
+                    <span class="eval-badge" x-show="m.meta.evaluation" :class="evalClass(m.meta.evaluation)" :title="evalTooltip(m.meta.evaluation)" x-text="evalLabel(m.meta.evaluation)"></span>
+                    <span class="sentiment-chip" x-show="m.meta.sentiment" :class="m.meta.sentiment && ('sent-' + m.meta.sentiment.label)" x-text="m.meta.sentiment ? sentimentGlyph(m.meta.sentiment) + ' ' + m.meta.sentiment.label : ''"></span>
+                    <div class="toolbar-spacer"></div>
+                    <button class="btn btn-sm btn-ghost" @click="copyText(m.content)" title="Copy">&#x2398;</button>
+                    <button class="btn btn-sm btn-ghost" x-show="mi === chatMessages.length - 1 && activeConvId" @click="regenerateLast()" :disabled="chatBusy" title="Regenerate">&#x21BB;</button>
+                    <button class="btn btn-sm btn-ghost" :class="{ 'is-good': m.feedback === 1 }" x-show="m.id" @click="rateMessage(m, 1)" title="Good answer">&#x25B2;</button>
+                    <button class="btn btn-sm btn-ghost" :class="{ 'is-bad': m.feedback === -1 }" x-show="m.id" @click="rateMessage(m, -1)" title="Bad answer">&#x25BC;</button>
+                  </div>
+                </template>
+                <div class="chat-sources" x-show="m.showSources">
+                  <template x-for="c in m.meta.chunks" :key="c.id">
+                    <div class="chat-source"><span class="chunk-cite" x-text="'[' + (c.cite ?? '–') + ']'"></span> <span x-text="c.text"></span></div>
+                  </template>
+                  <template x-for="(t, ti) in m.meta.triples" :key="ti">
+                    <div class="chat-source chat-triple"><span x-text="t.subject"></span> <b x-text="'\u2014[' + t.relation + ']\u2192'"></b> <span x-text="t.object"></span></div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </template>
+            </div>
+            <div class="chat-composer">
+              <textarea id="chat-input" x-model="chatInput" rows="1" @keydown="onChatKey($event)"
+                        :placeholder="'Message ' + activeBot().name + '…   (Enter to send · Shift+Enter for a new line)'"
+                        :disabled="chatBusy" aria-label="Chat message"
+                        x-effect="chatInput; $el.style.height = 'auto'; $el.style.height = Math.min($el.scrollHeight, 180) + 'px'"></textarea>
+              <button class="btn btn-primary" :class="{ 'btn-loading': chatBusy }" @click="sendChat()" :disabled="chatBusy || !chatInput.trim()"><span class="btn-text">Send</span></button>
+            </div>
+          </div>
+        </template>
+      </div>
 
       <!-- Chroma mode -->
       <div
@@ -369,6 +676,22 @@
           <span class="timing-display" x-show="embedTiming" x-text="'embed ' + embedTiming + 'ms'"></span>
         </div>
 
+        <div class="pipeline-trace" x-show="trace.stages.length || trace.transform || trace.warnings.length">
+          <template x-for="(st, i) in trace.stages" :key="i">
+            <span class="trace-stage" :title="st.detail"><span class="trace-name" x-text="st.name"></span><span class="trace-ms" x-text="st.ms + 'ms'"></span></span>
+          </template>
+          <template x-if="trace.transform && (trace.transform.queries.length || trace.transform.hyde)">
+            <details class="trace-transform">
+              <summary x-text="trace.transform.mode.replace('_', '-') + ': ' + (trace.transform.hyde ? 'hypothetical passage' : trace.transform.queries.length + ' variant(s)')"></summary>
+              <ul>
+                <template x-for="q in trace.transform.queries" :key="q"><li x-text="q"></li></template>
+                <li x-show="trace.transform.hyde" x-text="trace.transform.hyde"></li>
+              </ul>
+            </details>
+          </template>
+          <template x-for="w in trace.warnings" :key="w"><span class="trace-warning" x-text="'\u26A0 ' + w"></span></template>
+        </div>
+
         <div id="chunks-container">
           <template x-if="!chunks.length && !isQuerying">
             <div class="retrieval-empty">
@@ -378,21 +701,36 @@
           </template>
 
           <template x-for="chunk in chunks" :key="chunk.id">
-            <div class="chunk-card" :class="{ scored: chunk.score !== undefined }">
-              <div class="chunk-card-header">
-                <span class="chunk-id" x-text="'#' + (chunk.id || chunk.rank)"></span>
-                <span class="chunk-rank" x-text="'rank ' + chunk.rank"></span>
-                <span class="chunk-score" x-show="chunk.score !== undefined" x-text="formatScore(chunk.score)"></span>
+              <div class="chunk-card" :class="{ scored: chunk.score !== undefined, dropped: chunk.dropped }">
+                <div class="chunk-card-header">
+                  <span class="chunk-cite" x-show="chunk.cite" x-text="'[' + chunk.cite + ']'" title="Citation number in the prompt"></span>
+                  <span class="chunk-cite chunk-cite-dropped" x-show="chunk.dropped" title="Retrieved but cut by the context budget">cut</span>
+                  <span class="chunk-id" x-text="'#' + (chunk.id || chunk.rank)"></span>
+                  <span class="chunk-rank" x-text="'rank ' + chunk.rank"></span>
+                  <span class="chunk-score" x-show="chunk.score !== undefined" x-text="formatScore(chunk.score)"></span>
+                </div>
+                <div class="score-bar-track">
+                  <div
+                    class="score-bar-fill"
+                    :style="'width:' + (chunk.score !== undefined ? Math.max(0, chunk.score * 100) : 0) + '%'"
+                  ></div>
+                </div>
+                <div class="chunk-meta" x-show="chunk.scores || chunk.source">
+                  <template x-for="[k, v] in Object.entries(chunk.scores || {})" :key="k">
+                    <span class="score-chip" :class="'score-chip-' + k" :title="scoreTitle(k)"><b x-text="k"></b><span x-text="formatScoreChip(k, v)"></span></span>
+                  </template>
+                  <span class="meta-tag" x-show="chunk.expanded" title="Neighbouring chunks were added to the prompt">+ neighbours</span>
+                  <span class="meta-tag meta-source" x-show="chunk.source" x-text="chunk.source"></span>
+                  <span class="sentiment-chip" x-show="chunk.sentiment" :class="chunk.sentiment && ('sent-' + chunk.sentiment.label)"
+                        :title="chunk.sentiment ? 'VADER sentiment ' + chunk.sentiment.compound : ''"
+                        x-text="chunk.sentiment ? sentimentGlyph(chunk.sentiment) + ' ' + chunk.sentiment.label : ''"></span>
+                </div>
+                <div class="entity-chips" x-show="chunk.entities && chunk.entities.length">
+                  <template x-for="e in chunk.entities" :key="e"><span class="entity-chip" x-text="e"></span></template>
+                </div>
+                <div class="chunk-text" x-text="chunk.text"></div>
               </div>
-              <div class="score-bar-track">
-                <div
-                  class="score-bar-fill"
-                  :style="'width:' + (chunk.score !== undefined ? (chunk.score * 100) : 0) + '%'"
-                ></div>
-              </div>
-              <div class="chunk-text" x-text="chunk.text"></div>
-            </div>
-          </template>
+            </template>
         </div>
       </div>
 
@@ -456,6 +794,21 @@
             <div class="retrieval-spacer"></div>
             <span class="timing-display" x-show="embedTiming" x-text="'embed ' + embedTiming + 'ms'"></span>
           </div>
+          <div class="pipeline-trace" x-show="compareTrace.stages.length || compareTrace.transform || compareTrace.warnings.length">
+          <template x-for="(st, i) in compareTrace.stages" :key="i">
+            <span class="trace-stage" :title="st.detail"><span class="trace-name" x-text="st.name"></span><span class="trace-ms" x-text="st.ms + 'ms'"></span></span>
+          </template>
+          <template x-if="compareTrace.transform && (compareTrace.transform.queries.length || compareTrace.transform.hyde)">
+            <details class="trace-transform">
+              <summary x-text="compareTrace.transform.mode.replace('_', '-') + ': ' + (compareTrace.transform.hyde ? 'hypothetical passage' : compareTrace.transform.queries.length + ' variant(s)')"></summary>
+              <ul>
+                <template x-for="q in compareTrace.transform.queries" :key="q"><li x-text="q"></li></template>
+                <li x-show="compareTrace.transform.hyde" x-text="compareTrace.transform.hyde"></li>
+              </ul>
+            </details>
+          </template>
+          <template x-for="w in compareTrace.warnings" :key="w"><span class="trace-warning" x-text="'\u26A0 ' + w"></span></template>
+        </div>
           <div class="compare-chunks-container">
             <template x-if="!compareChromaChunks.length && !isQuerying">
               <div class="retrieval-empty">
@@ -464,8 +817,10 @@
               </div>
             </template>
             <template x-for="chunk in compareChromaChunks" :key="chunk.id">
-              <div class="chunk-card" :class="{ scored: chunk.score !== undefined }">
+              <div class="chunk-card" :class="{ scored: chunk.score !== undefined, dropped: chunk.dropped }">
                 <div class="chunk-card-header">
+                  <span class="chunk-cite" x-show="chunk.cite" x-text="'[' + chunk.cite + ']'" title="Citation number in the prompt"></span>
+                  <span class="chunk-cite chunk-cite-dropped" x-show="chunk.dropped" title="Retrieved but cut by the context budget">cut</span>
                   <span class="chunk-id" x-text="'#' + (chunk.id || chunk.rank)"></span>
                   <span class="chunk-rank" x-text="'rank ' + chunk.rank"></span>
                   <span class="chunk-score" x-show="chunk.score !== undefined" x-text="formatScore(chunk.score)"></span>
@@ -473,8 +828,21 @@
                 <div class="score-bar-track">
                   <div
                     class="score-bar-fill"
-                    :style="'width:' + (chunk.score !== undefined ? (chunk.score * 100) : 0) + '%'"
+                    :style="'width:' + (chunk.score !== undefined ? Math.max(0, chunk.score * 100) : 0) + '%'"
                   ></div>
+                </div>
+                <div class="chunk-meta" x-show="chunk.scores || chunk.source">
+                  <template x-for="[k, v] in Object.entries(chunk.scores || {})" :key="k">
+                    <span class="score-chip" :class="'score-chip-' + k" :title="scoreTitle(k)"><b x-text="k"></b><span x-text="formatScoreChip(k, v)"></span></span>
+                  </template>
+                  <span class="meta-tag" x-show="chunk.expanded" title="Neighbouring chunks were added to the prompt">+ neighbours</span>
+                  <span class="meta-tag meta-source" x-show="chunk.source" x-text="chunk.source"></span>
+                  <span class="sentiment-chip" x-show="chunk.sentiment" :class="chunk.sentiment && ('sent-' + chunk.sentiment.label)"
+                        :title="chunk.sentiment ? 'VADER sentiment ' + chunk.sentiment.compound : ''"
+                        x-text="chunk.sentiment ? sentimentGlyph(chunk.sentiment) + ' ' + chunk.sentiment.label : ''"></span>
+                </div>
+                <div class="entity-chips" x-show="chunk.entities && chunk.entities.length">
+                  <template x-for="e in chunk.entities" :key="e"><span class="entity-chip" x-text="e"></span></template>
                 </div>
                 <div class="chunk-text" x-text="chunk.text"></div>
               </div>
@@ -483,7 +851,9 @@
         </div>
 
         <!-- Divider -->
-        <div class="compare-divider"></div>
+        <div class="compare-divider resizer-split"
+             @pointerdown="startResize('split', $event)" @dblclick="resetLayout('split')"
+             title="Drag to resize · double-click to reset"></div>
 
         <!-- Right: Graph side -->
         <div class="compare-panel compare-panel-graph">
@@ -519,17 +889,23 @@
   </main>
 
   <!-- ===================== ANSWER PANEL ===================== -->
-  <footer id="answer-panel">
+  <footer id="answer-panel" x-show="backend !== 'chat'">
+    <div class="resizer resizer-y" aria-hidden="true"
+         @pointerdown="startResize('answer', $event)" @dblclick="resetLayout('answer')"
+         title="Drag to resize · double-click to reset"></div>
     <div class="query-bar">
+      <div class="query-field">
+      <span class="query-prompt" aria-hidden="true">&rsaquo;</span>
       <input
         type="text"
         id="question-input"
         x-model="question"
-        placeholder="Ask a question about your documents..."
+        placeholder="Ask a question about your documents…   (Ctrl/⌘ K to focus · ? for shortcuts)"
         @keydown.enter="!isQuerying && query()"
         :disabled="isQuerying"
         aria-label="Question"
       />
+      </div>
       <button
         id="query-btn"
         class="btn btn-primary"
@@ -540,6 +916,45 @@
       >
         <span class="btn-text">Query</span>
       </button>
+    </div>
+
+    <!-- Answer toolbar: verdicts, sentiment, emotion, export -->
+    <div class="answer-toolbar" x-show="(backend !== 'compare' && answer && answerDone) || (backend === 'compare' && (compareAnswerChroma || compareAnswerGraph) && compareChromaDone)">
+      <template x-if="backend !== 'compare' && evaluating"><span class="eval-badge eval-pending">checking groundedness…</span></template>
+      <template x-if="backend !== 'compare' && evaluation && !evaluating">
+        <button class="eval-badge" :class="evalClass(evaluation)" @click="claimsOpen = !claimsOpen" :aria-expanded="claimsOpen" x-text="evalLabel(evaluation) + (claimsOpen ? ' \u25B4' : ' \u25BE')"></button>
+      </template>
+      <span class="sentiment-chip" x-show="backend !== 'compare' && answerSentiment" :class="answerSentiment && ('sent-' + answerSentiment.label)"
+            :title="answerSentiment ? 'Answer sentiment (VADER ' + answerSentiment.compound + ')' : ''"
+            x-text="answerSentiment ? sentimentGlyph(answerSentiment) + ' ' + answerSentiment.label : ''"></span>
+      <span class="timing-display" x-show="queryMs" x-text="(queryMs / 1000).toFixed(1) + 's total'"></span>
+      <div class="toolbar-spacer"></div>
+      <button class="btn btn-sm btn-ghost" @click="analyzeEmotion()" :class="{ 'btn-loading': emotionLoading }" title="LLM emotion breakdown of the answer"><span class="btn-text">&#x2661; Emotion</span></button>
+      <button class="btn btn-sm btn-ghost" @click="copyMarkdown()" title="Copy answer, claims and sources as Markdown">&#x2398; Markdown</button>
+      <button class="btn btn-sm btn-ghost" @click="downloadJSON()" title="Download the full result as JSON">&#x2913; JSON</button>
+    </div>
+
+    <ul class="eval-claims" x-show="backend !== 'compare' && claimsOpen && evaluation && evaluation.claims.length">
+      <template x-for="(c, i) in (evaluation ? evaluation.claims : [])" :key="i">
+        <li :class="c.supported ? 'ok' : 'bad'"><span x-text="c.supported ? '\u2713' : '\u2717'"></span> <span x-text="c.claim"></span> <span class="eval-src" x-show="c.sources.length" x-text="c.sources.map(n => '[' + n + ']').join(' ')"></span></li>
+      </template>
+    </ul>
+
+    <div class="emotion-panel" x-show="emotion">
+      <template x-if="emotion && emotion.error"><span class="trace-warning" x-text="'\u26A0 ' + emotion.error"></span></template>
+      <template x-if="emotion && !emotion.error">
+        <div class="emotion-grid">
+          <span class="emotion-tone" x-text="emotion.tone"></span>
+          <template x-for="[name, v] in Object.entries(emotion.emotions)" :key="name">
+            <div class="emotion-row">
+              <span class="emotion-name" x-text="name"></span>
+              <span class="emotion-track"><span class="emotion-fill" :class="'emo-' + name" :style="'width:' + Math.round(v * 100) + '%'"></span></span>
+              <span class="emotion-val" x-text="v.toFixed(2)"></span>
+            </div>
+          </template>
+        </div>
+      </template>
+      <button class="btn btn-icon btn-close-mini" @click="emotion = null" aria-label="Close emotion panel">&#x2715;</button>
     </div>
 
     <!-- Single-backend answer -->
@@ -555,15 +970,24 @@
     <!-- Compare mode: two answers -->
     <div id="compare-answers" x-show="backend === 'compare'">
       <div class="compare-answer-panel">
-        <div class="compare-answer-label badge-chroma">&#x26A1; CHROMA answer</div>
+        <div class="compare-answer-label badge-chroma">&#x26A1; CHROMA answer
+          <span class="eval-badge" x-show="compareEvalChroma" :class="evalClass(compareEvalChroma)" :title="evalTooltip(compareEvalChroma)" x-text="evalLabel(compareEvalChroma)"></span>
+          <span class="eval-badge eval-pending" x-show="evaluating && !compareEvalChroma">checking…</span>
+          <span class="sentiment-chip" x-show="compareSentChroma" :class="compareSentChroma && ('sent-' + compareSentChroma.label)" x-text="compareSentChroma ? sentimentGlyph(compareSentChroma) + ' ' + compareSentChroma.label : ''"></span>
+        </div>
         <div
           class="compare-answer-text"
           :class="{ streaming: isQuerying && !compareChromaDone, done: compareChromaDone }"
         ><template x-if="!compareAnswerChroma && !isQuerying"><span class="answer-placeholder">Chroma answer will appear here...</span></template><template x-if="compareAnswerChroma"><span x-text="compareAnswerChroma"></span></template></div>
       </div>
-      <div class="compare-answer-divider"></div>
+      <div class="compare-answer-divider resizer-split"
+           @pointerdown="startResize('split', $event)" @dblclick="resetLayout('split')"></div>
       <div class="compare-answer-panel">
-        <div class="compare-answer-label badge-graph">&#x25C6; GRAPH answer</div>
+        <div class="compare-answer-label badge-graph">&#x25C6; GRAPH answer
+          <span class="eval-badge" x-show="compareEvalGraph" :class="evalClass(compareEvalGraph)" :title="evalTooltip(compareEvalGraph)" x-text="evalLabel(compareEvalGraph)"></span>
+          <span class="eval-badge eval-pending" x-show="evaluating && !compareEvalGraph">checking…</span>
+          <span class="sentiment-chip" x-show="compareSentGraph" :class="compareSentGraph && ('sent-' + compareSentGraph.label)" x-text="compareSentGraph ? sentimentGlyph(compareSentGraph) + ' ' + compareSentGraph.label : ''"></span>
+        </div>
         <div
           class="compare-answer-text"
           :class="{ streaming: isQuerying && !compareGraphDone, done: compareGraphDone }"
@@ -591,15 +1015,31 @@
 
       <div class="modal-body">
 
+        <!-- Provider selection -->
+        <div class="modal-group">
+          <span class="modal-label">Provider</span>
+          <div class="radio-group">
+            <label>
+              <input type="radio" x-model="provider" value="gemini" @change="onProviderChange()" />
+              <span>Gemini (Google AI)</span>
+            </label>
+            <label>
+              <input type="radio" x-model="provider" value="nvidia" @change="onProviderChange()" />
+              <span>NVIDIA NIM</span>
+            </label>
+          </div>
+        </div>
+
         <!-- API Key -->
         <div class="modal-group">
-          <label class="modal-label" for="api-key-input">API Key (Gemini / Google AI)</label>
+          <label class="modal-label" for="api-key-input">API Key</label>
           <div class="api-key-row">
             <input
               type="password"
               id="api-key-input"
               x-model="apiKey"
-              placeholder="AIza..."
+              @input="onKeyInput()"
+              :placeholder="keyId !== null ? 'Saved key \u2022\u2022\u2022\u2022' + keyHint + ' in use \u2014 type to replace' : (provider === 'nvidia' ? 'nvapi-...' : 'AIza...')"
               @keydown.enter="testKey()"
               autocomplete="off"
               aria-label="API Key"
@@ -608,7 +1048,7 @@
               class="btn"
               :class="{ 'btn-loading': keyStatus === 'validating', 'btn-primary': keyStatus !== 'validating' }"
               @click="testKey()"
-              :disabled="keyStatus === 'validating' || !apiKey.trim()"
+              :disabled="keyStatus === 'validating' || !hasKey()"
               aria-label="Test API key"
             >
               <span class="btn-text">Test</span>
@@ -617,6 +1057,38 @@
           <div class="key-status" :class="'status-' + keyStatus">
             <div class="status-dot"></div>
             <span class="status-label" x-text="keyStatusLabel()"></span>
+          </div>
+
+          <!-- Save key form (shown when valid) -->
+          <div class="save-key-row" x-show="keyStatus === 'valid' && apiKey.trim()">
+            <input
+              type="text"
+              x-model="newKeyLabel"
+              placeholder="Label (e.g. My Gemini Key)"
+              aria-label="Key label"
+              class="save-key-input"
+            />
+            <button
+              class="btn btn-sm"
+              :class="{ 'btn-loading': savingKey }"
+              @click="saveCurrentKey()"
+              :disabled="savingKey || !newKeyLabel.trim()"
+            >
+              <span class="btn-text">Save</span>
+            </button>
+          </div>
+
+          <!-- Saved keys list -->
+          <div x-show="savedKeys.filter(k => k.provider === provider).length > 0" class="saved-keys-list">
+            <div class="modal-label" style="margin-bottom:4px;">Saved keys</div>
+            <template x-for="sk in savedKeys.filter(k => k.provider === provider)" :key="sk.id">
+              <div class="saved-key-row">
+                <span class="saved-key-label" x-text="sk.label"></span>
+                <span class="saved-key-hint" x-text="'\u2022\u2022\u2022\u2022' + sk.key_hint"></span>
+                <button class="btn btn-sm" @click="loadKey(sk)" x-text="keyId === sk.id ? 'In use' : 'Use'" :disabled="keyId === sk.id"></button>
+                <button class="btn btn-sm btn-danger" @click="deleteKey(sk.id)">&#x2715;</button>
+              </div>
+            </template>
           </div>
         </div>
 
@@ -632,8 +1104,8 @@
             aria-label="Generation model"
           >
             <option value="" disabled x-show="!genModels.length">Validate key to load models</option>
-            <template x-for="m in genModels" :key="m">
-              <option :value="m" x-text="m"></option>
+            <template x-for="m in genModels" :key="m.value">
+              <option :value="m.value" x-text="m.label"></option>
             </template>
           </select>
         </div>
@@ -648,10 +1120,68 @@
             aria-label="Embedding model"
           >
             <option value="" disabled x-show="!embedModels.length">Validate key to load models</option>
-            <template x-for="m in embedModels" :key="m">
-              <option :value="m" x-text="m"></option>
+            <template x-for="m in embedModels" :key="m.value">
+              <option :value="m.value" x-text="m.label"></option>
             </template>
           </select>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- MCP: this app as a server -->
+        <div class="modal-group">
+          <span class="modal-label">MCP server (this app)</span>
+          <div class="field-hint">Let Claude Code, Claude Desktop or Cursor search your collections. Tools: list_collections, search_collection, graph_query, ask_bot. They use the active saved key.</div>
+          <div class="mcp-snippet">
+            <code x-text="mcpAddCommand()"></code>
+            <button class="btn btn-sm btn-ghost" @click="copyText(mcpAddCommand())" title="Copy">&#x2398;</button>
+          </div>
+        </div>
+
+        <!-- MCP: external servers this app's bots can use -->
+        <div class="modal-group">
+          <span class="modal-label">MCP servers (tools for bots)</span>
+          <div class="mcp-server-list">
+            <div class="field-hint" x-show="!mcpServers.length">No servers yet. Add a streamable-HTTP MCP server below.</div>
+            <template x-for="srv in mcpServers" :key="srv.id">
+              <div class="mcp-server" :class="{ disabled: !srv.enabled }">
+                <div class="mcp-server-head">
+                  <label class="toggle-row" :title="srv.enabled ? 'Disable' : 'Enable'">
+                    <input type="checkbox" :checked="srv.enabled" @change="toggleMcpServer(srv)" />
+                    <span class="toggle-switch" aria-hidden="true"></span>
+                  </label>
+                  <span class="mcp-server-name" x-text="srv.name"></span>
+                  <span class="meta-tag" x-text="srv.transport"></span>
+                  <div class="toolbar-spacer"></div>
+                  <button class="btn btn-sm" :class="{ 'btn-loading': srv.testing }" @click="testMcpServer(srv)"><span class="btn-text">Test</span></button>
+                  <button class="btn btn-sm btn-danger" @click="deleteMcpServer(srv)" @blur="srv.pendingDelete = false" x-text="srv.pendingDelete ? 'Confirm' : '\u2715'"></button>
+                </div>
+                <div class="mcp-server-url" x-text="srv.transport === 'http' ? srv.url : (srv.command + ' ' + srv.args.join(' '))"></div>
+                <div class="trace-warning" x-show="srv.error" x-text="'\u26A0 ' + srv.error"></div>
+                <div class="mcp-tool-chips" x-show="srv.tools">
+                  <template x-for="t in (srv.tools || [])" :key="t.name"><span class="entity-chip" :title="t.description" x-text="t.name"></span></template>
+                </div>
+              </div>
+            </template>
+          </div>
+          <div class="mcp-add">
+            <div class="radio-group" x-show="mcpAllowStdio">
+              <label><input type="radio" x-model="mcpForm.transport" value="http" /><span>HTTP</span></label>
+              <label><input type="radio" x-model="mcpForm.transport" value="stdio" /><span>stdio</span></label>
+            </div>
+            <input type="text" x-model="mcpForm.name" placeholder="Name (e.g. docs-search)" aria-label="MCP server name" />
+            <template x-if="mcpForm.transport === 'http'">
+              <input type="url" x-model="mcpForm.url" placeholder="https://example.com/mcp" aria-label="MCP server URL" />
+            </template>
+            <template x-if="mcpForm.transport === 'http'">
+              <input type="password" x-model="mcpForm.auth" placeholder="Authorization header (optional)" autocomplete="off" aria-label="Authorization header" />
+            </template>
+            <template x-if="mcpForm.transport === 'stdio'">
+              <input type="text" x-model="mcpForm.command" placeholder="Command, e.g. npx -y @modelcontextprotocol/server-everything" aria-label="stdio command" />
+            </template>
+            <div class="trace-warning" x-show="mcpFormError" x-text="mcpFormError"></div>
+            <button class="btn btn-sm btn-primary" @click="addMcpServer()" :disabled="!mcpForm.name.trim()"><span class="btn-text">Add server</span></button>
+          </div>
         </div>
 
         <div class="divider"></div>
@@ -677,7 +1207,334 @@
   <script src="/static/vendor/vis-network.min.js"></script>
   <!-- app.js must come before alpine.min.js — defer scripts execute in order,
        so arenaApp() is defined before Alpine scans x-data attributes. -->
-  <script src="/static/app.js" defer></script>
+  <!-- ===================== HISTORY DRAWER ===================== -->
+  <div class="modal-overlay" x-show="historyOpen" x-cloak @click.self="historyOpen = false" role="dialog" aria-modal="true" aria-label="Query history">
+    <div class="modal-panel drawer-wide" @click.stop>
+      <div class="modal-header">
+        <span class="modal-title">History</span>
+        <button class="btn btn-icon" @click="historyOpen = false" aria-label="Close history">&#x2715;</button>
+      </div>
+      <div class="drawer-search">
+        <input type="search" x-model="historyQuery" @input.debounce.250ms="loadHistory()" placeholder="Search past questions…" aria-label="Search history" />
+      </div>
+      <div class="drawer-list">
+        <div class="retrieval-empty" x-show="!history.length"><span>&#x21BA;</span><span>No queries yet</span></div>
+        <template x-for="h in history" :key="h.id">
+          <div class="history-item" :class="{ pinned: h.pinned }">
+            <button class="history-main" @click="restoreHistory(h)" title="Show this result">
+              <span class="history-q" x-text="h.question"></span>
+              <span class="history-meta">
+                <span class="mode-dot" :class="'mode-dot-' + h.backend"></span>
+                <span x-text="h.backend"></span> · <span x-text="h.collection"></span> · <span x-text="relativeTime(h.created_at)"></span>
+                <template x-if="h.payload.evaluation && h.payload.evaluation.claims"><span> · <span x-text="evalLabel(h.payload.evaluation)"></span></span></template>
+              </span>
+            </button>
+            <div class="history-actions">
+              <button class="btn btn-sm btn-ghost" @click="rerunHistory(h)" title="Run again with current settings">&#x25B6;</button>
+              <button class="btn btn-sm btn-ghost" @click="copyMarkdown(h)" title="Copy as Markdown">&#x2398;</button>
+              <button class="btn btn-sm btn-ghost" @click="downloadJSON(h)" title="Download JSON">&#x2913;</button>
+              <button class="btn btn-sm btn-ghost" :class="{ 'is-on': h.pinned }" @click="togglePin(h)" :title="h.pinned ? 'Unpin' : 'Pin'">&#x2605;</button>
+              <button class="btn btn-sm btn-ghost btn-danger-ghost" @click="deleteHistory(h)" title="Delete">&#x2715;</button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== COLLECTIONS DRAWER ===================== -->
+  <div class="modal-overlay" x-show="collectionsOpen" x-cloak @click.self="collectionsOpen = false" role="dialog" aria-modal="true" aria-label="Collections">
+    <div class="modal-panel drawer-wide" @click.stop>
+      <div class="modal-header">
+        <span class="modal-title">Collections</span>
+        <button class="btn btn-icon" @click="collectionsOpen = false" aria-label="Close collections">&#x2715;</button>
+      </div>
+      <div class="drawer-list">
+        <div class="retrieval-empty" x-show="!collections.length"><span>&#x25A4;</span><span>No collections yet — ingest something</span></div>
+        <template x-for="c in collections" :key="c.name">
+          <div class="collection-card" :class="{ active: c.name === (collection || 'default') }">
+            <div class="collection-head">
+              <span class="collection-name" x-text="c.name"></span>
+              <span class="event-badge" x-show="c.name === (collection || 'default')">in use</span>
+              <div class="toolbar-spacer"></div>
+              <button class="btn btn-sm" @click="useCollection(c)" :disabled="c.name === (collection || 'default')">Use</button>
+              <button class="btn btn-sm btn-danger" @click="deleteCollection(c)" @blur="pendingDelete = null"
+                      x-text="pendingDelete === c.name ? 'Confirm delete' : 'Delete'"></button>
+            </div>
+            <div class="collection-stats">
+              <span><b x-text="c.chunks"></b> chunks</span>
+              <span><b x-text="c.entities ?? '–'"></b> entities</span>
+              <span><b x-text="c.triples ?? '–'"></b> triples</span>
+              <span x-show="c.embed_model" :title="c.embed_provider"><b x-text="c.embed_dim"></b>-dim · <span x-text="c.embed_model"></span></span>
+            </div>
+            <div class="sentiment-bar" x-show="c.chunks" :title="'Chunk sentiment: ' + c.sentiment.positive + ' positive · ' + c.sentiment.neutral + ' neutral · ' + c.sentiment.negative + ' negative'">
+              <template x-for="seg in sentimentBar(c.sentiment)" :key="seg.k">
+                <span :class="'seg-' + seg.k" :style="'width:' + seg.pct + '%'"></span>
+              </template>
+            </div>
+            <div class="collection-sources" x-show="c.sources.length">
+              <template x-for="src in c.sources" :key="src.name">
+                <span class="meta-tag" x-text="src.name + ' · ' + src.chunks"></span>
+              </template>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" x-show="toast" x-cloak x-transition.opacity x-text="toast" role="status"></div>
+
+  <!-- ===================== BOT STUDIO ===================== -->
+  <div class="studio-overlay" x-show="studioOpen" x-cloak role="dialog" aria-modal="true" aria-label="Bot studio">
+    <template x-if="draft">
+      <div class="studio">
+        <div class="studio-head">
+          <span class="bot-emoji bot-emoji-lg" x-text="draft.emoji || '\u25C6'"></span>
+          <span class="modal-title" x-text="draft.id ? 'Edit bot' : 'New bot'"></span>
+          <span class="studio-sub">Changes preview live on the right; nothing is stored until you save.</span>
+          <div class="toolbar-spacer"></div>
+          <span class="trace-warning" x-show="draftError" x-text="draftError"></span>
+          <button class="btn btn-sm btn-danger" x-show="draft.id" @click="deleteDraftBot()" @blur="pendingBotDelete = false" x-text="pendingBotDelete ? 'Confirm delete' : 'Delete'"></button>
+          <button class="btn btn-sm" x-show="draft.id" @click="applyBotToArena(draft)">To arena</button>
+          <button class="btn btn-sm btn-primary" :class="{ 'btn-loading': savingDraft }" @click="saveDraft()"><span class="btn-text">Save bot</span></button>
+          <button class="btn btn-icon" @click="studioOpen = false" aria-label="Close studio">&#x2715;</button>
+        </div>
+        <div class="studio-body">
+          <div class="studio-form">
+            <div class="studio-grid-2">
+              <div class="form-row">
+                <label>Emoji</label>
+                <input type="text" x-model="draft.emoji" maxlength="8" />
+              </div>
+              <div class="form-row">
+                <label>Name</label>
+                <input type="text" x-model="draft.name" placeholder="e.g. Support Assistant" maxlength="60" />
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Description</label>
+              <input type="text" x-model="draft.description" placeholder="What is this bot for?" maxlength="300" />
+            </div>
+            <div class="form-row">
+              <label>System prompt</label>
+              <textarea x-model="draft.system_prompt" rows="6"></textarea>
+            </div>
+            <div class="studio-grid-2">
+              <div class="form-row">
+                <label>Collection</label>
+                <select x-model="draft.collection">
+                  <template x-for="c in collections" :key="c.name"><option :value="c.name" x-text="c.name + ' (' + c.chunks + ')'" :selected="c.name === draft.collection"></option></template>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Knowledge source</label>
+                <div class="radio-group">
+                  <template x-for="b in [['chroma','Vectors'],['graph','Graph'],['both','Both']]" :key="b[0]">
+                    <label><input type="radio" x-model="draft.backend" :value="b[0]" /><span x-text="b[1]"></span></label>
+                  </template>
+                </div>
+              </div>
+            </div>
+            <div class="studio-grid-2">
+              <div class="form-row">
+                <label>Generation model</label>
+                <select x-model="draft.gen_model" @change="checkToolSupport()">
+                  <template x-for="m in genModels" :key="m.value"><option :value="m.value" x-text="m.label" :selected="m.value === draft.gen_model"></option></template>
+                </select>
+              </div>
+              <div class="form-row">
+                <label>Embedding model</label>
+                <select x-model="draft.embedding_model">
+                  <template x-for="m in embedModels" :key="m.value"><option :value="m.value" x-text="m.label" :selected="m.value === draft.embedding_model"></option></template>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>API key</label>
+              <select x-model="draft.key_id">
+                <option value="">Use whichever key is active in Settings</option>
+                <template x-for="k in savedKeys.filter(k => k.provider === draft.provider)" :key="k.id">
+                  <option :value="k.id" x-text="k.label + ' \u2022\u2022\u2022\u2022' + k.key_hint" :selected="k.id === draft.key_id"></option>
+                </template>
+              </select>
+            </div>
+            <div class="form-row">
+              <label>Greeting</label>
+              <input type="text" x-model="draft.greeting" placeholder="Shown before the first message" maxlength="500" />
+            </div>
+            <div class="form-row">
+              <label>Starter questions <span class="field-hint">one per line, up to 6</span></label>
+              <textarea x-model="draft.startersText" rows="3"></textarea>
+            </div>
+            <div class="studio-tuning">
+              <div class="studio-tuning-head">
+                <span class="modal-label">Retrieval recipe</span>
+                <button class="btn btn-sm" @click="useArenaTuning()" title="Copy every Lab and generation setting from the arena">Copy from arena</button>
+              </div>
+              <div class="studio-grid-2">
+                <div class="form-row">
+                  <label>Search</label>
+                  <select x-model="draft.tuning.search_mode">
+                    <option value="dense">Dense</option><option value="hybrid">Hybrid</option><option value="keyword">Keyword</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label>Top-K <span class="value-display" x-text="draft.tuning.top_k"></span></label>
+                  <input type="range" min="1" max="20" x-model.number="draft.tuning.top_k" />
+                </div>
+                <div class="form-row">
+                  <label>Reranker</label>
+                  <select x-model="draft.tuning.rerank">
+                    <option value="none">Off</option><option value="llm">LLM judge</option>
+                    <template x-for="m in rerankModels" :key="m.value"><option :value="m.value" x-text="m.label"></option></template>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label>Query transform</label>
+                  <select x-model="draft.tuning.query_transform">
+                    <option value="none">None</option><option value="multi_query">Multi-query</option><option value="hyde">HyDE</option><option value="step_back">Step-back</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label>Temperature <span class="value-display" x-text="Number(draft.tuning.temperature).toFixed(2)"></span></label>
+                  <input type="range" min="0" max="1.5" step="0.05" x-model.number="draft.tuning.temperature" />
+                </div>
+                <div class="form-row">
+                  <label>Neighbour window</label>
+                  <select x-model.number="draft.tuning.context_window">
+                    <option :value="0">Off</option><option :value="1">±1</option><option :value="2">±2</option>
+                  </select>
+                </div>
+              </div>
+              <label class="toggle-row">
+                <input type="checkbox" x-model="draft.tuning.check_groundedness" />
+                <span class="toggle-switch" aria-hidden="true"></span>
+                <span>Groundedness check on every reply</span>
+              </label>
+            </div>
+            <div class="studio-tools">
+              <div class="studio-tuning-head"><span class="modal-label">MCP tools</span></div>
+              <div class="field-hint" x-show="!mcpTools.length">Connect MCP servers in Settings → MCP servers to give this bot tools.</div>
+              <template x-for="e in mcpToolErrors" :key="e.server"><div class="trace-warning" x-text="'\u26A0 ' + e.server + ': ' + e.error"></div></template>
+              <div class="trace-warning" x-show="draft.tools.length && toolSupport && !toolSupport.supported" x-text="'\u26A0 ' + draft.gen_model + ' may not support tool calling: ' + (toolSupport && toolSupport.note)"></div>
+              <div class="field-hint" x-show="draft.tools.length && toolSupport && toolSupport.supported" x-text="'\u2713 ' + draft.gen_model + ' supports tool calling'"></div>
+              <template x-for="t in mcpTools" :key="t.ref">
+                <label class="toggle-row tool-toggle">
+                  <input type="checkbox" :value="t.ref" x-model="draft.tools" @change="if (draft.tools.length && !toolSupport) checkToolSupport()" />
+                  <span class="toggle-switch" aria-hidden="true"></span>
+                  <span><b x-text="t.name"></b> <span class="bot-sub" x-text="t.server + (t.description ? ' — ' + t.description : '')"></span></span>
+                </label>
+              </template>
+            </div>
+          </div>
+
+          <div class="studio-preview">
+            <div class="studio-preview-head"><span class="modal-label">Live preview</span><button class="btn btn-sm btn-ghost" @click="previewMessages = []">Reset</button></div>
+            <div class="chat-thread">
+              <template x-if="!previewMessages.length">
+                <div class="chat-welcome">
+                  <div class="bot-emoji bot-emoji-xl" x-text="draft.emoji"></div>
+                  <p x-text="draft.greeting || 'Try the bot before saving it.'"></p>
+                  <div class="starter-row">
+                    <template x-for="st in (draft.startersText || '').split('\n').filter(x => x.trim())" :key="st">
+                      <button class="starter" @click="sendPreview(st)" x-text="st"></button>
+                    </template>
+                  </div>
+                </div>
+              </template>
+              <template x-for="(m, mi) in previewMessages" :key="mi">
+            <div class="chat-msg" :class="'chat-msg-' + m.role">
+              <div class="chat-bubble">
+                <div class="chat-rewrite" x-show="m.meta.query" :title="'Searched the knowledge base for this standalone query'">&#x2315; <span x-text="m.meta.query"></span></div>
+                <template x-for="call in m.meta.tool_calls" :key="call.id">
+                  <details class="tool-card" :class="'tool-' + call.status">
+                    <summary><span class="tool-icon">&#x2699;</span> <span x-text="call.name"></span> <span class="tool-status" x-text="call.status"></span></summary>
+                    <div class="tool-io"><b>input</b><pre x-text="JSON.stringify(call.arguments, null, 2)"></pre></div>
+                    <div class="tool-io" x-show="call.result || call.error"><b x-text="call.error ? 'error' : 'output'"></b><pre x-text="call.error || call.result"></pre></div>
+                  </details>
+                </template>
+                <div class="chat-text" x-show="m.role === 'user'" x-text="m.content"></div>
+                <div class="chat-text chat-md" x-show="m.role === 'assistant'" :class="{ streaming: m.streaming }" x-html="m.role === 'assistant' ? renderMarkdown(m.content || (m.streaming ? '' : '…')) : ''"></div>
+                <template x-if="m.role === 'assistant' && !m.streaming">
+                  <div class="chat-msg-footer">
+                    <button class="btn btn-sm btn-ghost" x-show="m.meta.chunks.length || m.meta.triples.length" @click="m.showSources = !m.showSources"
+                            x-text="(m.showSources ? '\u25BE ' : '\u25B8 ') + (m.meta.chunks.length + m.meta.triples.length) + ' sources'"></button>
+                    <span class="eval-badge eval-pending" x-show="m.evaluating">checking…</span>
+                    <span class="eval-badge" x-show="m.meta.evaluation" :class="evalClass(m.meta.evaluation)" :title="evalTooltip(m.meta.evaluation)" x-text="evalLabel(m.meta.evaluation)"></span>
+                    <span class="sentiment-chip" x-show="m.meta.sentiment" :class="m.meta.sentiment && ('sent-' + m.meta.sentiment.label)" x-text="m.meta.sentiment ? sentimentGlyph(m.meta.sentiment) + ' ' + m.meta.sentiment.label : ''"></span>
+                    <div class="toolbar-spacer"></div>
+                    <button class="btn btn-sm btn-ghost" @click="copyText(m.content)" title="Copy">&#x2398;</button>
+                    
+                  </div>
+                </template>
+                <div class="chat-sources" x-show="m.showSources">
+                  <template x-for="c in m.meta.chunks" :key="c.id">
+                    <div class="chat-source"><span class="chunk-cite" x-text="'[' + (c.cite ?? '–') + ']'"></span> <span x-text="c.text"></span></div>
+                  </template>
+                  <template x-for="(t, ti) in m.meta.triples" :key="ti">
+                    <div class="chat-source chat-triple"><span x-text="t.subject"></span> <b x-text="'\u2014[' + t.relation + ']\u2192'"></b> <span x-text="t.object"></span></div>
+                  </template>
+                </div>
+              </div>
+            </div>
+          </template>
+            </div>
+            <div class="chat-composer">
+              <textarea x-model="previewInput" rows="1" placeholder="Test message…" :disabled="previewBusy"
+                        @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); sendPreview(); }"></textarea>
+              <button class="btn btn-primary" :class="{ 'btn-loading': previewBusy }" @click="sendPreview()" :disabled="previewBusy || !previewInput.trim()"><span class="btn-text">Send</span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- ===================== COMMAND PALETTE ===================== -->
+  <div class="palette-overlay" x-show="paletteOpen" x-cloak @click.self="paletteOpen = false" role="dialog" aria-modal="true" aria-label="Command palette">
+    <div class="palette">
+      <div class="palette-input-row">
+        <span class="query-prompt" aria-hidden="true">&rsaquo;</span>
+        <input id="palette-input" type="text" x-model="paletteQuery" placeholder="Type a command…"
+               @keydown.arrow-down.prevent="paletteIndex = Math.min(paletteIndex + 1, paletteItems().length - 1)"
+               @keydown.arrow-up.prevent="paletteIndex = Math.max(paletteIndex - 1, 0)"
+               @keydown.enter.prevent="runPaletteItem(paletteItems()[paletteIndex])"
+               @input="paletteIndex = 0"
+               autocomplete="off" aria-label="Command" />
+        <span class="kbd">esc</span>
+      </div>
+      <ul class="palette-list" role="listbox">
+        <template x-for="(item, i) in paletteItems()" :key="item.id">
+          <li class="palette-item" :class="{ active: i === paletteIndex }" role="option" :aria-selected="i === paletteIndex"
+              @mouseenter="paletteIndex = i" @click="runPaletteItem(item)">
+            <span class="palette-group" x-text="item.group"></span>
+            <span class="palette-label" x-text="item.label"></span>
+            <span class="kbd" x-show="item.keys" x-text="item.keys"></span>
+          </li>
+        </template>
+        <li class="palette-empty" x-show="!paletteItems().length">No matching commands</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===================== SHORTCUTS CHEATSHEET ===================== -->
+  <div class="palette-overlay" x-show="shortcutsOpen" x-cloak @click.self="shortcutsOpen = false" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+    <div class="palette shortcuts-sheet">
+      <div class="modal-header">
+        <span class="modal-title">Keyboard shortcuts</span>
+        <button class="btn btn-icon" @click="shortcutsOpen = false" aria-label="Close">&#x2715;</button>
+      </div>
+      <dl class="shortcut-grid">
+        <template x-for="sc in shortcutList" :key="sc[0]">
+          <div class="shortcut-row"><dt><span class="kbd" x-text="sc[0]"></span></dt><dd x-text="sc[1]"></dd></div>
+        </template>
+      </dl>
+    </div>
+  </div>
+
+  <script src="/static/chat.js?v=12" defer></script>
+  <script src="/static/app.js?v=11" defer></script>
   <script src="/static/vendor/alpine.min.js" defer></script>
 
 </body>
