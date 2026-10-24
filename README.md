@@ -39,7 +39,8 @@ Most RAG tutorials show one retrieval strategy. Real systems face a genuine choi
 - **Two chunking strategies** — fixed sliding-window and sentence/paragraph-aware
 - **PDF + plain text ingestion** — single ingest populates both stores
 - **Two providers** — Gemini and NVIDIA NIM; key validation discovers the models your key can actually use (NVIDIA models are probed live)
-- **No build step** — Alpine.js served from disk; plain HTML/CSS/JS frontend
+- **Two UIs during the move** — the classic Alpine.js UI at `/`, and the new React dashboard shell at `/app/` (themes, command palette, live readiness)
+- **Ops basics** — `/healthz` and `/readyz` endpoints, JSON logs with request and run ids, automatic database migrations with a backup
 
 ---
 
@@ -51,9 +52,9 @@ Most RAG tutorials show one retrieval strategy. Real systems face a genuine choi
 | Vector store | ChromaDB (server mode, `HttpClient`) |
 | Knowledge graph | Neo4j 5 |
 | LLM / Embeddings | Google Gemini (`google-genai`) · NVIDIA NIM (OpenAI-compatible API) |
-| App data | SQLite (saved keys, bots, conversations, history, MCP servers) |
+| App data | SQLite via SQLAlchemy 2 + Alembic (saved keys, bots, conversations, history, MCP servers) |
 | Agent protocol | MCP Python SDK 2.x (streamable HTTP server + client) |
-| Frontend | Alpine.js 3 — no build step |
+| Frontend | React 18 + Vite + TypeScript at `/app/`; classic Alpine.js 3 UI at `/` |
 | Graph viz | vis-network 9 |
 | Orchestration | Docker Compose |
 
@@ -68,23 +69,45 @@ Most RAG tutorials show one retrieval strategy. Real systems face a genuine choi
 git clone https://github.com/li812/retrieval-arena.git
 cd retrieval-arena
 
-# 2. Fetch vendored frontend assets (Alpine.js, vis-network, fonts)
-bash scripts/fetch_vendor_assets.sh
-
-# 3. (Optional) copy and edit env
+# 2. (Optional) copy and edit env
 cp .env.example .env
 
-# 4. Start everything
+# 3. Build and start everything (only Docker is needed on the host)
 docker compose up --build
 ```
 
-Open **http://localhost:8000** — Neo4j takes ~30 s to initialise on first boot.
+The image is a multi-stage build: a Node stage builds the React app, and the API container serves it.
+Neo4j takes ~30 s to initialise on first boot.
+
+| URL | What |
+|---|---|
+| http://localhost:8000/ | Classic UI (Lab, Compare, Chat, Bot Studio) |
+| http://localhost:8000/app/ | New dashboard shell (theme, command palette with ⌘/Ctrl K, system readiness) |
+| http://localhost:8000/healthz | Liveness: `{"status":"ok"}` whenever the process is up |
+| http://localhost:8000/readyz | Readiness: SQLite (and migrations), Chroma and Neo4j; 503 naming the failing check |
+| http://localhost:8000/mcp/ | Built-in MCP server |
+
+Upgrading an existing install? Read [docs/operator/upgrading-to-m1.md](docs/operator/upgrading-to-m1.md): the first
+start migrates `arena.db` and keeps a backup next to it. A user guide is in
+[docs/user-guide/getting-started.md](docs/user-guide/getting-started.md).
+
+### Frontend development with hot reload
+
+```bash
+docker compose --profile dev up --build
+```
+
+This adds a `web` service (Node 22 in a container, `node_modules` in a Docker volume) running the Vite dev server on
+**http://localhost:5173/app/**. Edits under `frontend/` reload instantly; API calls are proxied to the `api`
+container (`VITE_PROXY_TARGET=http://api:8000`). Backend code under `backend/app` is bind-mounted into `api`:
+run `docker compose restart api` after Python changes.
 
 ### Exposed ports
 
 | Service | Port | Purpose |
 |---|---|---|
-| API (FastAPI) | 8000 | Main app |
+| API (FastAPI) | 8000 | Main app, classic UI, `/app/` shell |
+| Vite dev server (`dev` profile only) | 5173 | React app with hot reload |
 | ChromaDB | 8001 | Direct queries / debug |
 | Neo4j Browser | 7474 | Visual graph explorer |
 | Neo4j Bolt | 7687 | Driver access |
@@ -135,17 +158,21 @@ Tools run with the key last selected in the UI for the collection's provider. Th
 ## Architecture
 
 ```
-main.py                     FastAPI routes, SSE orchestration, Compare multiplexer
-app/services/
-  chunking.py               ChunkingService — fixed + sentence_aware strategies
-  embeddings.py             EmbeddingAgent — Gemini embed calls
-  generation.py             GenerationAgent — streaming Gemini generate
-  vector_store.py           VectorStore — ChromaDB HttpClient wrapper
-  graph_store.py            GraphStore — Neo4j driver, BFS traversal
-  extraction.py             GraphExtractionAgent — triple + entity extraction via Gemini
-  ingestion.py              IngestionAgent — fan-out to both stores in one call
-  retrieval.py              RetrievalAgent — Chroma MMR + Graph hop BFS, emits SSE events
-  model_config.py           ModelConfigAgent — key validation, model listing
+backend/
+  app/main.py               create_app(): routers, middleware, /static, /app/ SPA, /mcp/
+  app/core/                 settings, SQLite engine + migrations, logging, service container
+  app/models/               SQLAlchemy models (legacy tables mapped exactly)
+  app/repositories/         all database access (keys, collections, history, bots, conversations, MCP servers)
+  app/api/legacy/           today's endpoints, same paths and shapes as before
+  app/api/health.py         /healthz, /readyz
+  app/rag/                  chunking, stores, hybrid search, retrieval, rerank, evaluation, sentiment, ingestion
+  app/providers/            Gemini / NVIDIA embedding, generation, model discovery
+  app/runtime/chat.py       one chat turn: rewrite → retrieve → generate (+ tools) → checks
+  app/mcp/                  MCP client (bot tools) and server (/mcp/)
+  app/static/               classic Alpine UI
+  alembic/                  migrations (0001 = legacy baseline)
+  tests/                    unit, integration, parity (fakes; no network)
+frontend/                   React + Vite + TypeScript dashboard (served at /app/)
 ```
 
 ### Data flow — Ingest
@@ -234,6 +261,28 @@ question
 
 ---
 
+## Tests and lint
+
+Everything runs in containers. Backend (from the repo root):
+
+```bash
+docker build -f backend/Dockerfile.dev -t arena-backend-dev backend      # once, and when dependencies change
+docker run --rm -v "$PWD":/work -w /work/backend arena-backend-dev python -m pytest -q
+docker run --rm -v "$PWD":/work -w /work/backend arena-backend-dev sh -c 'ruff check . && ruff format --check .'
+```
+
+Frontend:
+
+```bash
+docker run --rm -v "$PWD/frontend":/web -v arena_fe_node_modules:/web/node_modules -w /web node:22-alpine \
+  sh -c 'npm ci && npm run lint && npm run typecheck && npm test -- --run && npm run build'
+```
+
+CI (`.github/workflows/ci.yml`) runs the same steps plus `alembic upgrade head` / `alembic check` and a Docker build.
+See [backend/README.md](backend/README.md) for the test layout and parity snapshots.
+
+---
+
 ## Resetting data
 
 ```bash
@@ -254,7 +303,12 @@ docker compose up
 | `NEO4J_PASSWORD` | `playground123` | Neo4j password |
 | `DEFAULT_GEN_MODEL` | `gemini-2.5-flash` | Default generation model |
 | `DEFAULT_EMBED_MODEL` | `gemini-embedding-001` | Default embedding model |
-| `ARENA_DB_PATH` | `arena.db` | SQLite file for keys, bots, conversations, history |
+| `ARENA_DB_PATH` | `arena.db` (Docker: `/app/arena_data/arena.db`) | SQLite file for keys, bots, conversations, history |
+| `AUTO_MIGRATE` | `true` | Run database migrations on startup (backs up a pre-migration database first) |
+| `ARENA_SPA_DIR` | `frontend/dist` (Docker: `/app/frontend_dist`) | Built React app served at `/app/` |
+| `LOG_FORMAT` | `json` | `json` lines or `console` |
+| `LOG_LEVEL` | `INFO` | Root log level |
+| `READYZ_TIMEOUT_S` | `2` | Per-check timeout for `/readyz` |
 | `ALLOW_STDIO_MCP` | `false` | Allow stdio MCP servers (they run commands in the container) |
 | `MCP_ALLOWED_HOSTS` | `localhost:*,127.0.0.1:*,[::1]:*` | Host headers accepted by the built-in MCP server |
 

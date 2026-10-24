@@ -1,0 +1,534 @@
+{
+ "builtin_mcp_server.call_ask_bot": {
+  "body": {
+   "answer": "str",
+   "bot": "str",
+   "graph_facts": [],
+   "sources": [
+    {
+     "cite": "number",
+     "id": "str",
+     "text": "str"
+    }
+   ]
+  },
+  "is_error": false
+ },
+ "builtin_mcp_server.call_graph_query": {
+  "body": {
+   "collection": "str",
+   "entities": [
+    "str"
+   ],
+   "triples": [
+    {
+     "object": "str",
+     "relation": "str",
+     "subject": "str"
+    }
+   ]
+  },
+  "is_error": false
+ },
+ "builtin_mcp_server.call_list_collections": {
+  "body": "str",
+  "is_error": false
+ },
+ "builtin_mcp_server.call_search_collection": {
+  "body": {
+   "collection": "str",
+   "passages": [
+    {
+     "id": "str",
+     "rank": "number",
+     "score": "number",
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "query": "str"
+  },
+  "is_error": false
+ },
+ "builtin_mcp_server.tools": {
+  "ask_bot": [
+   "bot",
+   "question"
+  ],
+  "graph_query": [
+   "collection",
+   "gen_model",
+   "hops",
+   "question"
+  ],
+  "list_collections": [],
+  "search_collection": [
+   "collection",
+   "mode",
+   "query",
+   "top_k"
+  ]
+ },
+ "chat_with_mcp_tool_call.chat_tool_call": {
+  "content_type": "text/event-stream",
+  "data": {
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "conversation": [
+    {
+     "conversation_id": "number"
+    }
+   ],
+   "done": [
+    {
+     "conversation_id": "number",
+     "message_id": "number"
+    }
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ],
+   "sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "token": [
+    {
+     "token": "str"
+    }
+   ],
+   "tool_call": [
+    {
+     "arguments": {},
+     "id": "str",
+     "name": "str",
+     "server": "str"
+    }
+   ],
+   "tool_result": [
+    {
+     "id": "str",
+     "name": "str",
+     "result": "str"
+    }
+   ]
+  },
+  "events": [
+   "conversation",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "tool_call",
+   "tool_result",
+   "token",
+   "sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "mcp_server_registry.create": {
+  "body": {
+   "args": [],
+   "command": "str",
+   "created_at": "str",
+   "enabled": "bool",
+   "env": {},
+   "headers": {
+    "X-Trace": "str"
+   },
+   "id": "number",
+   "name": "str",
+   "transport": "str",
+   "url": "str"
+  },
+  "status": 200
+ },
+ "mcp_server_registry.create_bad_url": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 422
+ },
+ "mcp_server_registry.create_duplicate": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 409
+ },
+ "mcp_server_registry.create_stdio_disabled": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 403
+ },
+ "mcp_server_registry.list": {
+  "body": {
+   "allow_stdio": "bool",
+   "servers": [
+    {
+     "args": [],
+     "command": "str",
+     "created_at": "str",
+     "enabled": "bool",
+     "env": {},
+     "headers": {
+      "X-Trace": "str"
+     },
+     "id": "number",
+     "name": "str",
+     "transport": "str",
+     "url": "str"
+    }
+   ]
+  },
+  "status": 200
+ },
+ "mcp_server_registry.tools": {
+  "body": {
+   "server": "str",
+   "tools": [
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {
+       "bot": {
+        "title": "str",
+        "type": "str"
+       },
+       "question": {
+        "title": "str",
+        "type": "str"
+       }
+      },
+      "required": [
+       "str"
+      ],
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    },
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {
+       "collection": {
+        "title": "str",
+        "type": "str"
+       },
+       "gen_model": {
+        "anyOf": [
+         {
+          "type": "str"
+         }
+        ],
+        "default": "null",
+        "title": "str"
+       },
+       "hops": {
+        "default": "number",
+        "title": "str",
+        "type": "str"
+       },
+       "question": {
+        "title": "str",
+        "type": "str"
+       }
+      },
+      "required": [
+       "str"
+      ],
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    },
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {
+       "collection": {
+        "title": "str",
+        "type": "str"
+       },
+       "mode": {
+        "default": "str",
+        "title": "str",
+        "type": "str"
+       },
+       "query": {
+        "title": "str",
+        "type": "str"
+       },
+       "top_k": {
+        "default": "number",
+        "title": "str",
+        "type": "str"
+       }
+      },
+      "required": [
+       "str"
+      ],
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    },
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {},
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    }
+   ]
+  },
+  "status": 200
+ },
+ "mcp_server_registry.tools_missing": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ },
+ "mcp_tools_and_toggle.all_tools_with_unreachable": {
+  "body": {
+   "errors": [
+    {
+     "error": "str",
+     "server": "str"
+    }
+   ],
+   "tools": [
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {
+       "bot": {
+        "title": "str",
+        "type": "str"
+       },
+       "question": {
+        "title": "str",
+        "type": "str"
+       }
+      },
+      "required": [
+       "str"
+      ],
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    },
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {
+       "collection": {
+        "title": "str",
+        "type": "str"
+       },
+       "gen_model": {
+        "anyOf": [
+         {
+          "type": "str"
+         }
+        ],
+        "default": "null",
+        "title": "str"
+       },
+       "hops": {
+        "default": "number",
+        "title": "str",
+        "type": "str"
+       },
+       "question": {
+        "title": "str",
+        "type": "str"
+       }
+      },
+      "required": [
+       "str"
+      ],
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    },
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {
+       "collection": {
+        "title": "str",
+        "type": "str"
+       },
+       "mode": {
+        "default": "str",
+        "title": "str",
+        "type": "str"
+       },
+       "query": {
+        "title": "str",
+        "type": "str"
+       },
+       "top_k": {
+        "default": "number",
+        "title": "str",
+        "type": "str"
+       }
+      },
+      "required": [
+       "str"
+      ],
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    },
+    {
+     "description": "str",
+     "input_schema": {
+      "properties": {},
+      "title": "str",
+      "type": "str"
+     },
+     "name": "str",
+     "ref": "str",
+     "server": "str",
+     "server_id": "number"
+    }
+   ]
+  },
+  "status": 200
+ },
+ "mcp_tools_and_toggle.delete": {
+  "body": {
+   "deleted": "number"
+  },
+  "status": 200
+ },
+ "mcp_tools_and_toggle.delete_missing": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ },
+ "mcp_tools_and_toggle.disable": {
+  "body": {
+   "enabled": "bool",
+   "id": "number"
+  },
+  "status": 200
+ },
+ "mcp_tools_and_toggle.enable_missing": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ },
+ "mcp_tools_and_toggle.unreachable_tools": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 502
+ },
+ "tool_support.gemini": {
+  "body": {
+   "note": "str",
+   "supported": "bool"
+  },
+  "status": 200
+ },
+ "tool_support.nvidia": {
+  "body": {
+   "note": "null",
+   "supported": "bool"
+  },
+  "status": 200
+ },
+ "tool_support.nvidia_no_key": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ }
+}

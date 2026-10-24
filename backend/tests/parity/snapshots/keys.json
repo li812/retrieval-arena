@@ -1,0 +1,152 @@
+{
+ "keys_lifecycle.activate": {
+  "body": {
+   "ok": "bool"
+  },
+  "status": 200
+ },
+ "keys_lifecycle.activate_missing_provider": {
+  "body": {
+   "detail": [
+    {
+     "input": "null",
+     "loc": [
+      "str"
+     ],
+     "msg": "str",
+     "type": "str"
+    }
+   ]
+  },
+  "status": 422
+ },
+ "keys_lifecycle.create": {
+  "body": {
+   "created_at": "str",
+   "id": "number",
+   "is_active": "bool",
+   "key_hint": "str",
+   "label": "str",
+   "last_used": "null",
+   "provider": "str"
+  },
+  "status": 200
+ },
+ "keys_lifecycle.create_bad_provider": {
+  "body": {
+   "detail": [
+    {
+     "ctx": {
+      "expected": "str"
+     },
+     "input": "str",
+     "loc": [
+      "str"
+     ],
+     "msg": "str",
+     "type": "str"
+    }
+   ]
+  },
+  "status": 422
+ },
+ "keys_lifecycle.create_duplicate": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ },
+ "keys_lifecycle.delete": {
+  "body": {
+   "deleted": "bool"
+  },
+  "status": 200
+ },
+ "keys_lifecycle.delete_missing": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ },
+ "keys_lifecycle.list": {
+  "body": [
+   {
+    "created_at": "str",
+    "id": "number",
+    "is_active": "bool",
+    "key_hint": "str",
+    "label": "str",
+    "last_used": "null",
+    "provider": "str"
+   }
+  ],
+  "status": 200
+ },
+ "validate_key.by_id_gemini": {
+  "body": {
+   "embed_model_dims": {},
+   "embed_models": [
+    {
+     "display_name": "str",
+     "name": "str"
+    }
+   ],
+   "error": "null",
+   "gen_models": [
+    {
+     "display_name": "str",
+     "name": "str"
+    }
+   ],
+   "rerank_models": [],
+   "valid": "bool"
+  },
+  "status": 200
+ },
+ "validate_key.by_id_nvidia": {
+  "body": {
+   "embed_model_dims": {
+    "fake-embed": "number"
+   },
+   "embed_models": [
+    {
+     "display_name": "str",
+     "name": "str"
+    }
+   ],
+   "error": "null",
+   "gen_models": [
+    {
+     "display_name": "str",
+     "name": "str"
+    }
+   ],
+   "rerank_models": [],
+   "valid": "bool"
+  },
+  "status": 200
+ },
+ "validate_key.invalid": {
+  "body": {
+   "embed_model_dims": {},
+   "embed_models": [],
+   "error": "str",
+   "gen_models": [],
+   "rerank_models": [],
+   "valid": "bool"
+  },
+  "status": 200
+ },
+ "validate_key.no_key": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ },
+ "validate_key.unknown_key_id": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ }
+}

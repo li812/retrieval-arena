@@ -11,7 +11,7 @@ You are the backend engineer for **Retrieval Arena**, a self-hostable bot platfo
 
 ## Codebase
 - Target layout: `backend/app/{core,models,repositories,providers,rag,runtime,mcp,api,grpc,jobs}`, plus `backend/alembic`, `backend/tests` and `backend/proto`.
-- The legacy code in `app/services/*` already works: the retrieval pipeline, hybrid search, reranking, evaluation, sentiment, chat, and the MCP client and server. **Move and adapt it; don't rewrite what works.**
+- The legacy logic now lives in `backend/app/{rag,providers,runtime,mcp}` (moved in M1) and already works: the retrieval pipeline, hybrid search, reranking, evaluation, sentiment, chat, and the MCP client and server. **Move and adapt it; don't rewrite what works.**
 - Match the style of the surrounding code: type hints, short docstrings where the reason isn't obvious, no comment noise.
 
 ## Non-negotiables
@@ -19,7 +19,7 @@ You are the backend engineer for **Retrieval Arena**, a self-hostable bot platfo
 - **Secrets:** use `core/crypto.py` (AES-256-GCM, row-bound AAD). Never return, log or print a secret, and never put one in a URL. Real provider keys exist in the developer's data (for example the NVIDIA key in the legacy `arena.db`): don't print them, and mask them in any output.
 - **Outbound URLs** (MCP, webhooks, callbacks, Ollama) go through the SSRF guard.
 - **No hardcoded model lists.** Discover models from the provider.
-- **Every task ships with tests**: unit tests, plus isolation tests for anything tenant-scoped. Run them: `cd backend && python -m pytest -q`. Lint with `ruff check`.
+- **Every task ships with tests**: unit tests, plus isolation tests for anything tenant-scoped. Run them with `docker run --rm -v "$PWD":/work -w /work/backend arena-backend-dev python -m pytest -q` (build the image once with `docker build -f backend/Dockerfile.dev -t arena-backend-dev backend`; see backend/README.md). Lint with `ruff check` and `ruff format --check` in the same image.
 - **Database changes** go through an Alembic migration. Never edit a migration that has already shipped.
 - **Don't run git commit or push.** The lead commits. Don't run destructive commands (dropping volumes, deleting data) without explicit instruction.
 

@@ -1,0 +1,99 @@
+/* =========================================================
+   Retrieval Arena — design tokens
+   Copied verbatim from the classic UI's style.css (`:root` and
+   `:root[data-theme="light"]`). Names and values must stay identical:
+   src/styles/tokens.test.ts compares them with the legacy file.
+   Dark "observatory" theme is the default; light is "lab paper".
+   Excluded from Prettier so hex case and alignment stay as-is.
+   ========================================================= */
+
+:root {
+  --bg:             #07090E;
+  --bg-raised:      #0B0F17;
+  --surface:        rgba(15, 20, 30, 0.72);
+  --surface-solid:  #0F141E;
+  --surface-hover:  rgba(255, 255, 255, 0.035);
+  --border:         rgba(148, 163, 184, 0.12);
+  --border-strong:  rgba(148, 163, 184, 0.24);
+  --text-primary:   #E6EAF2;
+  --text-secondary: #8B95A7;
+  --text-tertiary:  #566074;
+
+  --accent-chroma: #22D3EE;
+  --accent-graph:  #A78BFA;
+  --accent-chat:   #F472B6;
+  --accent:        var(--accent-chroma);
+  --accent-soft:   color-mix(in srgb, var(--accent) 14%, transparent);
+  --accent-glow:   color-mix(in srgb, var(--accent) 35%, transparent);
+
+  --red:   #F87171;
+  --green: #34D399;
+  --amber: #FBBF24;
+
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+
+  --sidebar-width: 300px;
+  --answer-min-height: 210px;
+  --header-height: 56px;
+
+  --radius-sm: 6px;
+  --radius:    8px;
+  --radius-lg: 12px;
+  --transition: 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 12px 40px -12px rgba(0, 0, 0, 0.6);
+
+  --header-bg:    rgba(7, 9, 14, 0.7);
+  --drawer-bg:    rgba(12, 16, 24, 0.92);
+  --input-bg:     rgba(7, 9, 14, 0.55);
+  --overlay:      rgba(3, 5, 9, 0.6);
+  --tint-1:       rgba(255, 255, 255, 0.025);
+  --tint-2:       rgba(255, 255, 255, 0.045);
+  --grid-dot:     rgba(148, 163, 184, 0.09);
+  --graph-edge:   rgba(148, 163, 184, 0.28);
+  --shadow-color: rgba(0, 0, 0, 0.7);
+  --on-accent:    #041016;
+  color-scheme: dark;
+}
+
+/* ----- Light theme ("lab paper"): same structure, ink on cool white ----- */
+:root[data-theme="light"] {
+  --bg:             #F4F6FA;
+  --bg-raised:      #FFFFFF;
+  --surface:        rgba(255, 255, 255, 0.78);
+  --surface-solid:  #FFFFFF;
+  --surface-hover:  rgba(15, 23, 42, 0.04);
+  --border:         rgba(15, 23, 42, 0.10);
+  --border-strong:  rgba(15, 23, 42, 0.20);
+  --text-primary:   #0F172A;
+  --text-secondary: #475569;
+  --text-tertiary:  #64748B;
+
+  --accent-chroma: #0891B2;
+  --accent-graph:  #7C3AED;
+  --accent-chat:   #DB2777;
+  --accent-soft:   color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-glow:   color-mix(in srgb, var(--accent) 22%, transparent);
+
+  --red:   #DC2626;
+  --green: #059669;
+  --amber: #B45309;
+
+  --shadow-panel: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 10px 30px -14px rgba(15, 23, 42, 0.18);
+  --header-bg:    rgba(255, 255, 255, 0.75);
+  --drawer-bg:    rgba(255, 255, 255, 0.96);
+  --input-bg:     #FFFFFF;
+  --overlay:      rgba(15, 23, 42, 0.28);
+  --tint-1:       rgba(15, 23, 42, 0.025);
+  --tint-2:       rgba(15, 23, 42, 0.06);
+  --grid-dot:     rgba(15, 23, 42, 0.10);
+  --graph-edge:   rgba(71, 85, 105, 0.35);
+  --shadow-color: rgba(15, 23, 42, 0.18);
+  --on-accent:    #FFFFFF;
+  color-scheme: light;
+}
+
+.mode-graph   { --accent: var(--accent-graph); }
+.mode-chroma  { --accent: var(--accent-chroma); }
+.mode-compare { --accent: var(--accent-chroma); }
+.mode-chat    { --accent: var(--accent-chat); }

@@ -1,0 +1,2273 @@
+{
+ "query_chroma.chroma_dense": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_groundedness": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "evaluation": [
+    {
+     "claims": [
+      {
+       "claim": "str",
+       "sources": [
+        "number"
+       ],
+       "supported": "bool"
+      }
+     ],
+     "score": "number"
+    }
+   ],
+   "evaluation_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "evaluation_started",
+   "evaluation",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_hybrid": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "bm25": "number",
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    },
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_hyde": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ],
+   "query_transformed": [
+    {
+     "hyde": "str",
+     "mode": "str",
+     "queries": []
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "query_transformed",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_keyword": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "bm25": "number",
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "chunk_scored",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_multi_query": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ],
+   "query_transformed": [
+    {
+     "hyde": "null",
+     "mode": "str",
+     "queries": [
+      "str"
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "query_transformed",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_order_document": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_order_sandwich": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "null",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    },
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_order_score_threshold": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": []
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_rerank_llm": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number",
+      "rerank": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ],
+   "reranked": [
+    {
+     "method": "str",
+     "scores": {
+      "lab_chunk_0000": "number",
+      "lab_chunk_0001": "number",
+      "lab_chunk_0002": "number",
+      "lab_chunk_0003": "number"
+     }
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "reranked",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_source_filter": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_chroma.chroma_step_back": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "bm25": "number",
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    },
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ],
+   "query_transformed": [
+    {
+     "hyde": "null",
+     "mode": "str",
+     "queries": [
+      "str"
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "query_transformed",
+   "candidates_found",
+   "chunk_scored+",
+   "pipeline_trace",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_compare.compare": {
+  "content_type": "text/event-stream",
+  "data": {
+   "chroma_answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "chroma_answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "chroma_candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chroma_chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "bm25": "number",
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    },
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number",
+      "fused": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "chroma_context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "chroma_pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ],
+   "compare_started": [
+    {}
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "graph_answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "graph_answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "graph_candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "graph_context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "graph_hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": {
+   "chroma": [
+    "chroma_candidates_found",
+    "chroma_chunk_scored+",
+    "chroma_pipeline_trace",
+    "chroma_context_assembled",
+    "chroma_answer_token+",
+    "chroma_answer_sentiment"
+   ],
+   "graph": [
+    "graph_candidates_found",
+    "graph_hop_traversed",
+    "graph_context_assembled",
+    "graph_answer_token+",
+    "graph_answer_sentiment"
+   ],
+   "other": [
+    "compare_started",
+    "embedding_done",
+    "done"
+   ]
+  },
+  "status": 200
+ },
+ "query_compare_groundedness.compare_groundedness": {
+  "content_type": "text/event-stream",
+  "data": {
+   "chroma_answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "chroma_answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "chroma_candidates_found": [
+    {
+     "count": "number",
+     "ids": [
+      "str"
+     ],
+     "lists": "number",
+     "mode": "str"
+    }
+   ],
+   "chroma_chunk_scored": [
+    {
+     "chunk_id": "str",
+     "cite": "number",
+     "dropped": "bool",
+     "entities": [
+      "str"
+     ],
+     "expanded": "bool",
+     "rank": "number",
+     "score": "number",
+     "scores": {
+      "dense": "number"
+     },
+     "sentiment": {
+      "compound": "number",
+      "label": "str"
+     },
+     "source": "str",
+     "text": "str"
+    }
+   ],
+   "chroma_context_assembled": [
+    {
+     "chunks": [
+      {
+       "cite": "number",
+       "context_text": "str",
+       "id": "str",
+       "score": "number",
+       "text": "str"
+      }
+     ]
+    }
+   ],
+   "chroma_evaluation": [
+    {
+     "claims": [
+      {
+       "claim": "str",
+       "sources": [
+        "number"
+       ],
+       "supported": "bool"
+      }
+     ],
+     "score": "number"
+    }
+   ],
+   "chroma_pipeline_trace": [
+    {
+     "stages": [
+      {
+       "detail": "str",
+       "ms": "number",
+       "name": "str"
+      }
+     ]
+    }
+   ],
+   "compare_started": [
+    {}
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "evaluation_started": [
+    {}
+   ],
+   "graph_answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "graph_answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "graph_candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "graph_context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "graph_evaluation": [
+    {
+     "claims": [
+      {
+       "claim": "str",
+       "sources": [
+        "number"
+       ],
+       "supported": "bool"
+      }
+     ],
+     "score": "number"
+    }
+   ],
+   "graph_hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": {
+   "chroma": [
+    "chroma_candidates_found",
+    "chroma_chunk_scored+",
+    "chroma_pipeline_trace",
+    "chroma_context_assembled",
+    "chroma_answer_token+",
+    "chroma_answer_sentiment",
+    "chroma_evaluation"
+   ],
+   "graph": [
+    "graph_candidates_found",
+    "graph_hop_traversed",
+    "graph_context_assembled",
+    "graph_answer_token+",
+    "graph_answer_sentiment",
+    "graph_evaluation"
+   ],
+   "other": [
+    "compare_started",
+    "embedding_done",
+    "evaluation_started",
+    "done"
+   ]
+  },
+  "status": 200
+ },
+ "query_compare_mismatch.compare_mismatch": {
+  "content_type": "text/event-stream",
+  "data": {
+   "compare_started": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "error": [
+    {
+     "message": "str"
+    }
+   ]
+  },
+  "events": {
+   "chroma": [],
+   "graph": [],
+   "other": [
+    "compare_started",
+    "embedding_done",
+    "error"
+   ]
+  },
+  "status": 200
+ },
+ "query_dimension_mismatch.dimension_mismatch": {
+  "content_type": "text/event-stream",
+  "data": {
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "error": [
+    {
+     "message": "str"
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "error"
+  ],
+  "status": 200
+ },
+ "query_graph.graph_contains_both": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "hop_traversed+",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_graph.graph_contains_out": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "hop_traversed+",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_graph.graph_exact_both": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "hop_traversed+",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_graph.graph_exact_out": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "hop_traversed+",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_graph.graph_fuzzy_both": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "hop_traversed+",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_graph.graph_fuzzy_out": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "hop_traversed+",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_graph_groundedness.graph_groundedness": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [
+      "str"
+     ],
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "evaluation": [
+    {
+     "claims": [
+      {
+       "claim": "str",
+       "sources": [
+        "number"
+       ],
+       "supported": "bool"
+      }
+     ],
+     "score": "number"
+    }
+   ],
+   "evaluation_started": [
+    {}
+   ],
+   "hop_traversed": [
+    {
+     "hop": "number",
+     "triples": [
+      {
+       "object": "str",
+       "relation": "str",
+       "subject": "str"
+      }
+     ]
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "hop_traversed",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "evaluation_started",
+   "evaluation",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_graph_no_entities.graph_no_entities": {
+  "content_type": "text/event-stream",
+  "data": {
+   "answer_sentiment": [
+    {
+     "compound": "number",
+     "label": "str"
+    }
+   ],
+   "answer_token": [
+    {
+     "token": "str"
+    }
+   ],
+   "candidates_found": [
+    {
+     "count": "number",
+     "entities": [
+      "str"
+     ]
+    }
+   ],
+   "context_assembled": [
+    {
+     "entities": [],
+     "triples": []
+    }
+   ],
+   "done": [
+    {}
+   ],
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "candidates_found",
+   "context_assembled",
+   "answer_token+",
+   "answer_sentiment",
+   "done"
+  ],
+  "status": 200
+ },
+ "query_invalid_body.invalid_backend": {
+  "body": {
+   "detail": [
+    {
+     "ctx": {
+      "expected": "str"
+     },
+     "input": "str",
+     "loc": [
+      "str"
+     ],
+     "msg": "str",
+     "type": "str"
+    }
+   ]
+  },
+  "status": 422
+ },
+ "query_model_mismatch.model_mismatch": {
+  "content_type": "text/event-stream",
+  "data": {
+   "embedding_done": [
+    {
+     "duration_ms": "number"
+    }
+   ],
+   "embedding_started": [
+    {}
+   ],
+   "error": [
+    {
+     "message": "str"
+    }
+   ]
+  },
+  "events": [
+   "embedding_started",
+   "embedding_done",
+   "error"
+  ],
+  "status": 200
+ },
+ "query_without_key.no_key": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ }
+}

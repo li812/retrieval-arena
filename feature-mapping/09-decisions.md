@@ -25,6 +25,9 @@
 | D19 | **The first account on an install is the instance owner** for the instance settings page only; others see those settings read-only; transfer with `arena instance transfer-owner` | Accepted default (was Q9) | 2026-10-25 |
 | D20 | **Ease of use is a requirement**: setup wizard, page tours, contextual help, Simple/Advanced mode, templates, a user guide written alongside each feature | User requirement | 2026-10-25 |
 | D21 | **Work is run by four project agents** (`.claude/agents/`): project manager, backend engineer, frontend engineer, QA engineer | User requirement | 2026-10-25 |
+| D22 | **Sync SQLAlchemy engine** in M1 (calls run in worker threads, as today); revisit if the async runtime (M4) needs an async session | Matches current threading model; least risk during the move | 2026-10-25 |
+| D23 | **All milestones land on the `platform` branch** (one PR into `dev-beta` per milestone) instead of a branch per milestone | Keeps the long refactor on one line of history | 2026-10-25 |
+| D24 | **Node 22** for the frontend build stage, the dev container and CI (Node 20 reached end of life in April 2026); `engines.node >=20.19` keeps local Node 20 working | QA finding F7 (M1) | 2026-10-25 |
 
 ## Open questions
 

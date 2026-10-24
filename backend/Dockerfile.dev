@@ -1,0 +1,15 @@
+# Test/lint image for the backend: dependencies only, the source is bind-mounted at run time.
+#   docker build -f backend/Dockerfile.dev -t arena-backend-dev backend
+#   docker run --rm -v "$PWD":/work -w /work/backend arena-backend-dev python -m pytest -q
+FROM python:3.11-slim
+
+COPY pyproject.toml /tmp/pyproject.toml
+RUN python - <<'PY'
+import subprocess, sys, tomllib
+project = tomllib.load(open("/tmp/pyproject.toml", "rb"))["project"]
+deps = project["dependencies"] + project["optional-dependencies"]["dev"]
+subprocess.check_call([sys.executable, "-m", "pip", "install", "--no-cache-dir", *deps])
+PY
+
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /work/backend

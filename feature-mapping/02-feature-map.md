@@ -195,7 +195,7 @@ Platform
 | UI-10 | Retrieval Lab (Chroma / Graph / Compare) | P0 | M7 | KB-5 | Parity with today |
 | UI-11 | Conversations browser, history, export | P1 | M7 | API-4 | — |
 | UI-12 | Usage & logs | P1 | M8 | OBS-1 | — |
-| UI-13 | Keyboard shortcuts, resizable panels, responsive down to 375 px | P1 | M7 | UI-1 | — |
+| UI-13 | Keyboard shortcuts, resizable panels, **responsive and touch-ready: phone (375 px), iPad portrait and landscape (768–1194 px), desktop**; Safari-correct (dynamic viewport units, safe areas, no zoom on input focus); 44 px touch targets; nothing hover-only | P0 | M1→M9 | UI-1 | Every page checked at 375×812, 768×1024, 1024×768, 834×1194, 1194×834 and desktop in both themes; no horizontal scroll; every action reachable by touch |
 
 ## OBS — Usage, logs, audit
 

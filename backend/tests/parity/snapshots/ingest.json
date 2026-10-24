@@ -1,0 +1,68 @@
+{
+ "ingest_errors.blank_text": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ },
+ "ingest_errors.dimension_mismatch": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 422
+ },
+ "ingest_errors.empty_files": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ },
+ "ingest_errors.model_mismatch": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 422
+ },
+ "ingest_errors.no_key": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ },
+ "ingest_errors.nothing_to_ingest": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ },
+ "ingest_text_sentence_aware_with_graph.text_sentence_aware": {
+  "body": {
+   "collection": "str",
+   "documents": "number",
+   "embedding_model": "str",
+   "num_chunks": "number",
+   "num_triples": "number"
+  },
+  "status": 200
+ },
+ "ingest_txt_and_pdf_files.files_fixed": {
+  "body": {
+   "collection": "str",
+   "documents": "number",
+   "embedding_model": "str",
+   "num_chunks": "number",
+   "num_triples": "number"
+  },
+  "status": 200
+ },
+ "ingest_vector_only.vector_only": {
+  "body": {
+   "collection": "str",
+   "documents": "number",
+   "embedding_model": "str",
+   "num_chunks": "number",
+   "num_triples": "number"
+  },
+  "status": 200
+ }
+}

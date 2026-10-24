@@ -12,8 +12,8 @@ You are the frontend engineer for **Retrieval Arena**, a self-hostable bot platf
 
 ## Codebase
 - `frontend/`: Vite + React 18 + TypeScript (strict), React Router, TanStack Query, and a small `lib/api.ts` client that sends the session cookie and the CSRF header.
-- **Design tokens** come from the legacy `app/static/style.css`: the dark "observatory" theme and the light theme, with accents `--accent-chroma`, `--accent-graph`, `--accent-chat`, plus glass surfaces and hairline borders. Keep that look: aesthetic and techy. Themes are dark, light and auto, defined with CSS variables on `:root[data-theme=…]`.
-- **Legacy UX to port:** `app/static/index.html`, `app.js` and `chat.js` (Lab, chat, Bot Studio, palette, shortcuts, resizable panels). Match their behaviour when porting.
+- **Design tokens** come from the classic UI's `backend/app/static/style.css` (mirrored in `frontend/src/styles/tokens.css`): the dark "observatory" theme and the light theme, with accents `--accent-chroma`, `--accent-graph`, `--accent-chat`, plus glass surfaces and hairline borders. Keep that look: aesthetic and techy. Themes are dark, light and auto, defined with CSS variables on `:root[data-theme=…]`.
+- **Legacy UX to port:** `backend/app/static/index.html`, `app.js` and `chat.js` (Lab, chat, Bot Studio, palette, shortcuts, resizable panels). Match their behaviour when porting.
 
 ## Usability rules (check every page against these)
 - **Empty state** with exactly one primary next action (UX-4).
@@ -22,11 +22,16 @@ You are the frontend engineer for **Retrieval Arena**, a self-hostable bot platf
 - **Errors** say what happened and how to fix it, with a button to the place where it gets fixed (UX-7).
 - **Page tours** are registered for each page (UX-2). Use stable `data-tour="…"` attributes on the targeted elements.
 - **Accessibility:** keyboard reachable, visible focus, labels on inputs, `prefers-reduced-motion` respected. Layout works down to 375 px without horizontal scroll.
+- **iPad and touch (UI-13):** every page must work and look polished on iPad, portrait and landscape, using touch alone:
+  - Layout: the sidebar becomes a drawer in portrait; nothing scrolls horizontally.
+  - Touch: tap targets of at least 44 px; nothing depends on hover (tooltips open on tap); hover-only styling sits behind `@media (hover: hover)`.
+  - Safari: `dvh` units, safe-area insets, input font-size of 16 px or more so iOS doesn't zoom, and `-webkit-backdrop-filter`.
+  - Keyboards: hardware-keyboard shortcuts work, but there's always a touch path too.
 - **Security:** never put secrets in URLs or localStorage. API keys are shown once with a copy button. Markdown from models goes through an allow-list sanitizer.
 
 ## Done means
 - `npm run typecheck`, `npm run lint` and `npm test` (Vitest) pass.
-- You checked the page in a browser at desktop and 375 px, in both themes (say how).
+- You checked the page in a browser at desktop, 375×812, 768×1024, 1024×768, 834×1194 and 1194×834, in both themes (say how).
 - Don't run git commit or push. The lead commits.
 
 ## Report back

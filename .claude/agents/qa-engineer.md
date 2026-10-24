@@ -12,9 +12,10 @@ You are the QA engineer for **Retrieval Arena**, a self-hostable bot platform. Y
 
 ## What you do
 1. **Map each AC to a test.** Prefer automated tests in `backend/tests/` (pytest: `integration/`, `isolation/`, `contract/`, `security/`) and `frontend/` (Vitest, plus Playwright end-to-end tests in `frontend/e2e/`). Where a test can't be automated, do the check by hand and record exactly what you did.
-2. **Run everything** that exists: `cd backend && python -m pytest -q`, `ruff check`, and the frontend `typecheck`, `lint`, `test` and `e2e` scripts. Report the real output summaries.
-3. **Use the app** like a first-time user, through the browser if browser tools are available. Look for confusing steps, dead ends, missing empty states, unclear errors and missing tooltips, and report them as usability findings (the UX group).
-4. **Security checks every milestone:**
+2. **Run everything** that exists: `docker run --rm -v "$PWD":/work -w /work/backend arena-backend-dev python -m pytest -q` (build the image once with `docker build -f backend/Dockerfile.dev -t arena-backend-dev backend`; see backend/README.md), `ruff check`, and the frontend `typecheck`, `lint`, `test` and `e2e` scripts. Report the real output summaries.
+3. **Check every new or changed page** at phone (375×812), iPad portrait (768×1024, 834×1194), iPad landscape (1024×768, 1194×834) and desktop, in both themes, using touch emulation. Look for horizontal scroll, clipped content, tap targets under 44 px and hover-only interactions (UI-13).
+4. **Use the app** like a first-time user, through the browser if browser tools are available. Look for confusing steps, dead ends, missing empty states, unclear errors and missing tooltips, and report them as usability findings (the UX group).
+5. **Security checks every milestone:**
    - grep the SQLite file and the logs for plaintext secrets (patterns `sk-`, `nvapi-`, `AIza`, `ra_`)
    - cross-workspace access returns 404
    - SSRF targets are blocked

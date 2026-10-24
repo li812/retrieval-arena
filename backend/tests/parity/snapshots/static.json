@@ -1,0 +1,25 @@
+{
+ "index_serves_alpine_ui.index": {
+  "content_type": "text/html",
+  "status": 200
+ },
+ "static_assets.app.js": {
+  "content_type": "application/javascript",
+  "status": 200
+ },
+ "static_assets.chat.js": {
+  "content_type": "application/javascript",
+  "status": 200
+ },
+ "static_assets.index.html": {
+  "content_type": "text/html",
+  "status": 200
+ },
+ "static_assets.missing": {
+  "status": 404
+ },
+ "static_assets.style.css": {
+  "content_type": "text/css",
+  "status": 200
+ }
+}

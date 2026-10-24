@@ -1,0 +1,191 @@
+{
+ "analyze_emotion.emotion": {
+  "body": {
+   "emotions": {
+    "anger": "number",
+    "anticipation": "number",
+    "disgust": "number",
+    "fear": "number",
+    "joy": "number",
+    "sadness": "number",
+    "surprise": "number",
+    "trust": "number"
+   },
+   "tone": "str"
+  },
+  "status": 200
+ },
+ "analyze_emotion.emotion_no_key": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 400
+ },
+ "collections_list_and_delete.delete": {
+  "body": {
+   "deleted": "str"
+  },
+  "status": 200
+ },
+ "collections_list_and_delete.delete_missing": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ },
+ "collections_list_and_delete.list": {
+  "body": [
+   {
+    "chunks": "number",
+    "embed_dim": "number",
+    "embed_model": "str",
+    "embed_provider": "str",
+    "entities": "number",
+    "name": "str",
+    "sentiment": {
+     "negative": "number",
+     "neutral": "number",
+     "positive": "number"
+    },
+    "sources": [
+     {
+      "chunks": "number",
+      "name": "str"
+     }
+    ],
+    "triples": "number"
+   }
+  ],
+  "status": 200
+ },
+ "history.create": {
+  "body": {
+   "id": "number"
+  },
+  "status": 200
+ },
+ "history.create_invalid": {
+  "body": {
+   "detail": [
+    {
+     "input": {
+      "question": "str"
+     },
+     "loc": [
+      "str"
+     ],
+     "msg": "str",
+     "type": "str"
+    }
+   ]
+  },
+  "status": 422
+ },
+ "history.delete": {
+  "body": {
+   "deleted": "number"
+  },
+  "status": 200
+ },
+ "history.delete_missing": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ },
+ "history.limit_invalid": {
+  "body": {
+   "detail": [
+    {
+     "ctx": {
+      "ge": "number"
+     },
+     "input": "str",
+     "loc": [
+      "str"
+     ],
+     "msg": "str",
+     "type": "str"
+    }
+   ]
+  },
+  "status": 422
+ },
+ "history.list": {
+  "body": [
+   {
+    "backend": "str",
+    "collection": "str",
+    "created_at": "str",
+    "id": "number",
+    "payload": {
+     "answers": {
+      "chroma": "str"
+     },
+     "settings": {
+      "top_k": "number"
+     },
+     "timing": {
+      "total_ms": "number"
+     }
+    },
+    "pinned": "bool",
+    "question": "str"
+   },
+   {
+    "backend": "str",
+    "collection": "str",
+    "created_at": "str",
+    "id": "number",
+    "payload": {},
+    "pinned": "bool",
+    "question": "str"
+   }
+  ],
+  "status": 200
+ },
+ "history.pin": {
+  "body": {
+   "id": "number",
+   "pinned": "bool"
+  },
+  "status": 200
+ },
+ "history.pin_missing": {
+  "body": {
+   "detail": "str"
+  },
+  "status": 404
+ },
+ "history.search": {
+  "body": [
+   {
+    "backend": "str",
+    "collection": "str",
+    "created_at": "str",
+    "id": "number",
+    "payload": {
+     "answers": {
+      "chroma": "str"
+     },
+     "settings": {
+      "top_k": "number"
+     },
+     "timing": {
+      "total_ms": "number"
+     }
+    },
+    "pinned": "bool",
+    "question": "str"
+   }
+  ],
+  "status": 200
+ },
+ "history.unpin": {
+  "body": {
+   "id": "number",
+   "pinned": "bool"
+  },
+  "status": 200
+ }
+}

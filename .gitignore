@@ -36,10 +36,21 @@ build/
 neo4j_data/
 chroma_data/
 
-# Vendored frontend assets — fetched by scripts/fetch_vendor_assets.sh
-app/static/vendor/
+# Vendored classic-UI assets — fetched by scripts/fetch_vendor_assets.sh
+backend/app/static/vendor/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Local databases and migration backups
+*.db
+*.db-shm
+*.db-wal
+*.pre-alembic-*.bak
 
 # Test / coverage
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/

@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# Downloads all vendored frontend assets into app/static/vendor/.
-# Run once before your first `docker-compose up`, or after wiping the vendor dir.
-# The Dockerfile also runs this script at image build time.
+# Downloads the classic UI's vendored assets into backend/app/static/vendor/.
+# The Dockerfile runs this at image build time; run it yourself only when serving the
+# backend outside Docker. Works from any directory.
 # Uses only Python's stdlib — no curl or wget required.
 set -euo pipefail
+
+export ARENA_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "[vendor] Fetching assets with Python urllib..."
 
@@ -14,7 +16,7 @@ import hashlib
 import os
 import sys
 
-VENDOR = "app/static/vendor"
+VENDOR = os.path.join(os.environ["ARENA_REPO_ROOT"], "backend", "app", "static", "vendor")
 FONTS_DIR = os.path.join(VENDOR, "fonts")
 os.makedirs(FONTS_DIR, exist_ok=True)
 

@@ -6,7 +6,7 @@ Every milestone runs on its own branch off `dev-beta` and ends in one PR. Featur
 - The exit criteria are met.
 - QA has signed off.
 - The user-guide section for each shipped feature exists (DOC-1).
-- New UI has tooltips and empty states (UX-3, UX-4).
+- New UI has tooltips and empty states (UX-3, UX-4), and works on phone, iPad (portrait and landscape, touch) and desktop (UI-13).
 - `progress.md` is updated.
 
 ```

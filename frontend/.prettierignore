@@ -1,0 +1,6 @@
+dist
+node_modules
+coverage
+package-lock.json
+# Verbatim copy of the classic UI's tokens; keep byte-identical values (see tokens.test.ts)
+src/styles/tokens.css

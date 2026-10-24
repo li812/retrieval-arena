@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Retrieval Arena</title>
+    <link rel="icon" type="image/svg+xml" href="/app/favicon.svg" />
+    <script>
+      // Resolve the theme before first paint so there is no dark/light flash.
+      // Same key and rules as the classic UI (app/static/index.html) and src/lib/theme.ts.
+      (function () {
+        var pref = 'auto';
+        try {
+          pref = localStorage.getItem('arena.theme') || 'auto';
+        } catch (e) {}
+        if (pref !== 'light' && pref !== 'dark') pref = 'auto';
+        var dark =
+          pref === 'dark' ||
+          (pref === 'auto' && !matchMedia('(prefers-color-scheme: light)').matches);
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>Retrieval Arena needs JavaScript. The classic UI is at <a href="/">/</a>.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
